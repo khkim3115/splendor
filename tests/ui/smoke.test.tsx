@@ -4,11 +4,15 @@
 
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../../src/App'
+import { setAiDelayScale } from '../../src/ai/client'
+import { setupGame } from '../../src/engine/setup'
 import { cardKo } from '../../src/ui/i18n/ko'
 import { useGameStore } from '../../src/store/gameStore'
 import { baseState, config, gems, patchPlayer, tokens } from '../helpers'
+
+setAiDelayScale(0)
 
 function resetStore(): void {
   localStorage.clear()
@@ -17,11 +21,13 @@ function resetStore(): void {
     actionLog: [],
     snapshots: [],
     eventFeed: [],
+    eventCounts: [],
     lastEvents: [],
     pendingPicks: [],
     selectedCard: null,
     selectedDeck: null,
     handoffPending: false,
+    aiThinking: false,
     lastError: null,
   })
 }
@@ -174,6 +180,61 @@ describe('UI 스모크', () => {
     expect(document.querySelector(`[data-card-id="${hiddenCard}"]`)).toBeNull()
     // 뒷면 표시는 존재한다
     expect(screen.getAllByLabelText('비공개 카드').length).toBeGreaterThan(0)
+  })
+
+  it('AI 좌석 게임: 사람이 두면 AI가 자동으로 응수하고 무르기가 동작한다', async () => {
+    const user = userEvent.setup()
+    const players = [
+      { type: 'human', name: '사람' },
+      { type: 'ai', name: 'AI', difficulty: 'easy' },
+    ] as const
+    // 사람(0번)이 선이 되는 시드를 결정적으로 찾는다
+    let seed = 42
+    while (setupGame({ players, seed }).startPlayer !== 0) seed++
+    useGameStore.getState().newGame({ players, seed })
+    render(<App />)
+
+    // 사람 1명 + AI → 핸드오프 오버레이가 없어야 한다
+    await user.click(screen.getByLabelText(/^루비 토큰/))
+    await user.click(screen.getByLabelText(/^루비 토큰/))
+    await user.click(screen.getByRole('button', { name: '가져오기 확정' }))
+    expect(screen.queryByRole('dialog', { name: '기기 전달' })).toBeNull()
+
+    // AI가 자동으로 응수한다
+    await vi.waitFor(() => {
+      expect(useGameStore.getState().actionLog.length).toBeGreaterThanOrEqual(2)
+      expect(useGameStore.getState().aiThinking).toBe(false)
+    })
+
+    // 무르기 → 내 직전 결정 시점(게임 시작)으로 롤백
+    await user.click(screen.getByRole('button', { name: /한 수 무르기/ }))
+    expect(useGameStore.getState().actionLog).toHaveLength(0)
+    expect(useGameStore.getState().committed!.currentPlayer).toBe(
+      useGameStore.getState().committed!.startPlayer,
+    )
+  })
+
+  it('AI 차례에 선 핸드오프 게이트는 AI가 아니라 사람을 지목한다 (§9-O)', () => {
+    // [사람, 사람, AI] — AI 차례 저장본을 로드한 상황 시뮬레이션
+    const s = baseState(3, 42, { currentPlayer: 2 })
+    const withKinds = {
+      ...s,
+      config: {
+        ...s.config,
+        players: [
+          { type: 'human', name: '갑' },
+          { type: 'human', name: '을' },
+          { type: 'ai', name: 'AI 쉬움', difficulty: 'easy' },
+        ] as const,
+      },
+    }
+    useGameStore.setState({ committed: withKinds, handoffPending: true, aiThinking: true })
+    render(<App />)
+
+    const dialog = screen.getByRole('dialog', { name: '기기 전달' })
+    // AI가 아닌 사람(직전 행동자 = 을)을 지목한다
+    expect(within(dialog).queryByText(/AI 쉬움 준비 완료/)).toBeNull()
+    expect(within(dialog).getByRole('button', { name: /을 준비 완료 — 계속/ })).toBeTruthy()
   })
 
   it('게임 종료 상태면 결과 화면이 뜨고 동점 근거가 표시된다', () => {

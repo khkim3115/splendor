@@ -3,21 +3,46 @@ import type { GameConfig, PlayerKind } from '../../engine'
 import { useGameStore } from '../../store/gameStore'
 import { hasSave } from '../../store/persistence'
 
-const DEFAULT_NAMES = ['플레이어 1', '플레이어 2', '플레이어 3', '플레이어 4']
+type SeatKind = 'human' | 'easy' | 'normal'
+
+const SEAT_LABEL: Record<SeatKind, string> = {
+  human: '사람',
+  easy: 'AI · 쉬움',
+  normal: 'AI · 보통',
+}
+
+const defaultName = (kind: SeatKind, i: number): string =>
+  kind === 'human' ? `플레이어 ${i + 1}` : `${SEAT_LABEL[kind]} ${i + 1}`
+
+const DEFAULT_KINDS: SeatKind[] = ['human', 'normal', 'easy', 'normal']
 
 export function SetupScreen() {
   const newGame = useGameStore((s) => s.newGame)
   const loadSaved = useGameStore((s) => s.loadSaved)
   const [count, setCount] = useState<2 | 3 | 4>(2)
-  const [names, setNames] = useState<string[]>(DEFAULT_NAMES)
+  const [kinds, setKinds] = useState<SeatKind[]>(DEFAULT_KINDS)
+  const [names, setNames] = useState<string[]>(
+    DEFAULT_KINDS.map((k, i) => defaultName(k, i)),
+  )
   const [seedText, setSeedText] = useState('')
   const [loadError, setLoadError] = useState<string | null>(null)
 
+  const setKind = (i: number, kind: SeatKind) => {
+    setKinds(kinds.map((k, j) => (j === i ? kind : k)))
+    // 이름을 손대지 않았다면 좌석 종류에 맞춰 갱신
+    if (names[i] === defaultName(kinds[i]!, i) || names[i]?.trim() === '') {
+      setNames(names.map((n, j) => (j === i ? defaultName(kind, i) : n)))
+    }
+  }
+
   const start = () => {
-    const players: PlayerKind[] = Array.from({ length: count }, (_, i) => ({
-      type: 'human',
-      name: names[i]?.trim() || DEFAULT_NAMES[i]!,
-    }))
+    const players: PlayerKind[] = Array.from({ length: count }, (_, i) => {
+      const kind = kinds[i]!
+      const name = names[i]?.trim() || defaultName(kind, i)
+      return kind === 'human'
+        ? { type: 'human', name }
+        : { type: 'ai', name, difficulty: kind === 'easy' ? 'easy' : 'normal' }
+    })
     const seed =
       seedText.trim() !== '' && Number.isInteger(Number(seedText))
         ? Number(seedText)
@@ -29,7 +54,7 @@ export function SetupScreen() {
   return (
     <main className="setup-screen">
       <h1>스플랜더</h1>
-      <p className="setup-sub">르네상스 보석 상인의 명성 경쟁 — 2~4인</p>
+      <p className="setup-sub">르네상스 보석 상인의 명성 경쟁 — 2~4인 · AI 대전 지원</p>
 
       <section className="setup-card">
         <h2>새 게임</h2>
@@ -57,11 +82,20 @@ export function SetupScreen() {
               id={`name-${i}`}
               value={names[i] ?? ''}
               maxLength={12}
-              onChange={(e) =>
-                setNames(names.map((n, j) => (j === i ? e.target.value : n)))
-              }
+              onChange={(e) => setNames(names.map((n, j) => (j === i ? e.target.value : n)))}
             />
-            <span className="seat-kind">사람 (AI는 M5에서 추가됩니다)</span>
+            <select
+              aria-label={`${i + 1}번 자리 종류`}
+              value={kinds[i]}
+              onChange={(e) => setKind(i, e.target.value as SeatKind)}
+            >
+              <option value="human">사람</option>
+              <option value="easy">AI · 쉬움</option>
+              <option value="normal">AI · 보통</option>
+              <option value="hard" disabled>
+                AI · 어려움 (M6 예정)
+              </option>
+            </select>
           </div>
         ))}
 
@@ -84,11 +118,7 @@ export function SetupScreen() {
       {hasSave() && (
         <section className="setup-card">
           <h2>이어하기</h2>
-          <button
-            type="button"
-            className="btn btn-lg"
-            onClick={() => setLoadError(loadSaved())}
-          >
+          <button type="button" className="btn btn-lg" onClick={() => setLoadError(loadSaved())}>
             저장된 게임 불러오기
           </button>
           {loadError && <p className="error-text">⚠ {loadError}</p>}
