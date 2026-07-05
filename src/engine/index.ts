@@ -1,6 +1,6 @@
 // 순수 룰 엔진 공개 API (docs/ARCHITECTURE.md §3)
 
-export const ENGINE_VERSION = '0.1.0-m1'
+export const ENGINE_VERSION = '0.2.0-m2'
 
 export * from './types'
 export { CARDS } from './data/cards'
@@ -18,3 +18,27 @@ export {
 export { createRng, nextInt, shuffle, type RngState } from './rng'
 export { setupGame } from './setup'
 export { fnv1a, hashState } from './serialize'
+export type { GameEvent } from './events'
+export { IllegalActionError, type ValidationFailure, type ValidationResult } from './errors'
+export { canAfford, canonicalPayment, isValidPayment, paymentNeed } from './payment'
+export { eligibleNobles } from './nobles'
+export {
+  allPlayersStuck,
+  findBoardLocation,
+  hasAnyLegalPlayAction,
+  isLegal,
+  validateAction,
+} from './legal'
+export { computeResult } from './end'
+export { playerView } from './view'
+export { applyAction, type ApplyOutcome } from './apply'
+export { setStateFreezing } from './freeze'
+export {
+  ZERO_GEMS,
+  ZERO_TOKENS,
+  addTokens,
+  subtractTokens,
+  tokenTotal,
+  withGemDelta,
+  withTokenDelta,
+} from './tokens'
