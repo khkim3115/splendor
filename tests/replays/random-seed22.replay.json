@@ -1,0 +1,1105 @@
+{
+ "name": "random-seed22",
+ "config": {
+  "players": [
+   {
+    "type": "human",
+    "name": "P1"
+   },
+   {
+    "type": "human",
+    "name": "P2"
+   },
+   {
+    "type": "human",
+    "name": "P3"
+   }
+  ],
+  "seed": 22
+ },
+ "actions": [
+  {
+   "type": "TAKE_SAME",
+   "color": "green"
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 46
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 34
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "green",
+    "black"
+   ]
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "green",
+    "black"
+   ]
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "blue",
+    "red"
+   ]
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 36
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 28
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 47
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 12,
+   "payment": {
+    "white": 1,
+    "blue": 0,
+    "green": 0,
+    "red": 1,
+    "black": 0,
+    "gold": 2
+   }
+  },
+  {
+   "type": "RESERVE_DECK",
+   "tier": 3
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 84
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 62
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 37,
+   "payment": {
+    "white": 1,
+    "blue": 0,
+    "green": 2,
+    "red": 0,
+    "black": 0,
+    "gold": 1
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "green",
+    "black"
+   ]
+  },
+  {
+   "type": "DISCARD",
+   "tokens": {
+    "white": 1,
+    "blue": 1,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "blue",
+    "red"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 29,
+   "payment": {
+    "white": 0,
+    "blue": 1,
+    "green": 1,
+    "red": 0,
+    "black": 1,
+    "gold": 2
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 19
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "blue",
+    "green"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 0,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 2,
+    "black": 1,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "DISCARD",
+   "tokens": {
+    "white": 1,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 2
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "DISCARD",
+   "tokens": {
+    "white": 0,
+    "blue": 1,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "blue"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 18,
+   "payment": {
+    "white": 0,
+    "blue": 2,
+    "green": 0,
+    "red": 2,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 53,
+   "payment": {
+    "white": 2,
+    "blue": 0,
+    "green": 2,
+    "red": 2,
+    "black": 0,
+    "gold": 1
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "blue",
+    "green"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 2,
+   "payment": {
+    "white": 0,
+    "blue": 1,
+    "green": 1,
+    "red": 1,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_SAME",
+   "color": "red"
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 39,
+   "payment": {
+    "white": 0,
+    "blue": 3,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "red"
+   ]
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 17,
+   "payment": {
+    "white": 0,
+    "blue": 1,
+    "green": 0,
+    "red": 1,
+    "black": 2,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "DISCARD",
+   "tokens": {
+    "white": 0,
+    "blue": 0,
+    "green": 1,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 9,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 1,
+    "red": 0,
+    "black": 1,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "green",
+    "black"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 6,
+   "payment": {
+    "white": 2,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "green",
+    "black"
+   ]
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "blue"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 13,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 1,
+    "red": 2,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 1,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 1,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 20,
+   "payment": {
+    "white": 1,
+    "blue": 1,
+    "green": 0,
+    "red": 0,
+    "black": 2,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 47,
+   "payment": {
+    "white": 0,
+    "blue": 1,
+    "green": 2,
+    "red": 0,
+    "black": 2,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "DISCARD",
+   "tokens": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 1,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 8
+  },
+  {
+   "type": "TAKE_SAME",
+   "color": "black"
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 35,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 1,
+    "red": 1,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 19,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 1
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 66,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 2,
+    "red": 2,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 21,
+   "payment": {
+    "white": 0,
+    "blue": 1,
+    "green": 1,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "RESERVE_DECK",
+   "tier": 1
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 7,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 1,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 11,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 1
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 36,
+   "payment": {
+    "white": 0,
+    "blue": 2,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 38,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 1,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_SAME",
+   "color": "red"
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 25,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 1,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "green",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "DISCARD",
+   "tokens": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 1,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 24,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 55
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 34,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 2,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 72
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 70
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 33,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 32,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 1,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "DISCARD",
+   "tokens": {
+    "white": 0,
+    "blue": 1,
+    "green": 0,
+    "red": 1,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 16,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 2,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 68,
+   "payment": {
+    "white": 3,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 3,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 4,
+   "payment": {
+    "white": 0,
+    "blue": 2,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 26,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 14,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 1
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 27,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 23,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "blue",
+    "green"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 22,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 1
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 5,
+   "payment": {
+    "white": 0,
+    "blue": 1,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 30,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 28,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 15,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 1,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 41,
+   "payment": {
+    "white": 0,
+    "blue": 1,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 1
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 76,
+   "payment": {
+    "white": 4,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "green",
+    "red"
+   ]
+  },
+  {
+   "type": "RESERVE_BOARD",
+   "cardId": 63
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 10,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 88,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 3,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 31,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 81,
+   "payment": {
+    "white": 0,
+    "blue": 1,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 73,
+   "payment": {
+    "white": 1,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 3,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_SAME",
+   "color": "white"
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "white",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 78,
+   "payment": {
+    "white": 1,
+    "blue": 1,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 58,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 1,
+    "gold": 0
+   }
+  },
+  {
+   "type": "TAKE_DIFFERENT",
+   "colors": [
+    "blue",
+    "red",
+    "black"
+   ]
+  },
+  {
+   "type": "PURCHASE",
+   "cardId": 49,
+   "payment": {
+    "white": 0,
+    "blue": 0,
+    "green": 0,
+    "red": 0,
+    "black": 0,
+    "gold": 0
+   }
+  }
+ ],
+ "checkpoints": [
+  {
+   "index": 20,
+   "hash": "42bcf8cb"
+  },
+  {
+   "index": 40,
+   "hash": "4dfbe8da"
+  },
+  {
+   "index": 60,
+   "hash": "fca2f4ef"
+  },
+  {
+   "index": 80,
+   "hash": "690c88b1"
+  },
+  {
+   "index": 100,
+   "hash": "b7fc7a2a"
+  }
+ ],
+ "finalHash": "6986dde6"
+}

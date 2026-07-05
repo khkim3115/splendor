@@ -13,5 +13,14 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',
+    coverage: {
+      provider: 'v8',
+      include: ['src/engine/**'],
+      // M3부터 활성 게이트 (docs/ROADMAP.md): engine/ 한정 라인 95% / 브랜치 90%
+      thresholds: {
+        lines: 95,
+        branches: 90,
+      },
+    },
   },
 })

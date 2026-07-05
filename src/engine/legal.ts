@@ -5,15 +5,17 @@
 import { CARDS } from './data/cards'
 import { RESERVE_LIMIT } from './constants'
 import type { ValidationResult } from './errors'
-import { canAfford, isValidPayment } from './payment'
+import { canAfford, canonicalPayment, isValidPayment } from './payment'
 import { tokenTotal } from './tokens'
 import {
   GEM_COLORS,
+  TOKEN_COLORS,
   type Action,
   type CardId,
   type GameState,
   type GemColor,
   type TokenColor,
+  type TokenMap,
 } from './types'
 
 const COLOR_KO: Record<TokenColor, string> = {
@@ -61,8 +63,10 @@ export function hasAnyLegalPlayAction(
   if (GEM_COLORS.some((g) => state.supply[g] > 0)) return true
 
   // 행동 C: 예약 여유 + 예약할 카드 존재 (황금 유무는 무관, §9-F)
+  // 보드의 HIDDEN_CARD(-1)는 마스킹 상태에 수를 적용한 탐색 국면에서만 생기며,
+  // legalActions와의 일관성을 위해 판정에서 제외한다
   if (p.reserved.length < RESERVE_LIMIT) {
-    const anyBoardCard = state.board.some((row) => row.some((c) => c !== null))
+    const anyBoardCard = state.board.some((row) => row.some((c) => c !== null && c >= 0))
     const anyDeckCard = state.decks.some((d) => d.length > 0)
     if (anyBoardCard || anyDeckCard) return true
   }
@@ -70,7 +74,7 @@ export function hasAnyLegalPlayAction(
   // 행동 D: 구매 가능한 카드 존재
   for (const row of state.board) {
     for (const id of row) {
-      if (id !== null && canAfford(p, CARDS[id]!)) return true
+      if (id !== null && id >= 0 && canAfford(p, CARDS[id]!)) return true
     }
   }
   for (const r of p.reserved) {
@@ -85,6 +89,10 @@ export function allPlayersStuck(state: GameState): boolean {
 }
 
 export function validateAction(state: GameState, action: Action): ValidationResult {
+  // 액션은 JSON에서 올 수 있다 — null 등 비객체에도 throw 없이 응답한다
+  if (typeof action !== 'object' || action === null) {
+    return fail('§4', '알 수 없는 액션입니다')
+  }
   const phase = state.phase
   if (phase.kind === 'gameOver') {
     return fail('§8', '게임이 이미 종료되었습니다')
@@ -248,4 +256,117 @@ export function validateAction(state: GameState, action: Action): ValidationResu
 
 export function isLegal(state: GameState, action: Action): boolean {
   return validateAction(state, action).ok
+}
+
+/** k개 조합 (순서 고정 — 결정론) */
+function chooseK<T>(xs: readonly T[], k: number): readonly (readonly T[])[] {
+  if (k === 0) return [[]]
+  if (xs.length < k) return []
+  const [head, ...rest] = xs as [T, ...T[]]
+  const withHead = chooseK(rest, k - 1).map((c) => [head, ...c])
+  return [...withHead, ...chooseK(rest, k)]
+}
+
+/** 보유량 한도 내에서 정확히 k개를 반납하는 모든 조합 (6색 중복조합, k ≤ 3 → 최대 C(8,3)=56) */
+function discardCombos(holdings: TokenMap, k: number): readonly TokenMap[] {
+  const out: TokenMap[] = []
+  const counts: number[] = [0, 0, 0, 0, 0, 0]
+  const build = (): TokenMap => ({
+    white: counts[0]!,
+    blue: counts[1]!,
+    green: counts[2]!,
+    red: counts[3]!,
+    black: counts[4]!,
+    gold: counts[5]!,
+  })
+  const rec = (i: number, remaining: number): void => {
+    if (remaining === 0) {
+      out.push(build())
+      return
+    }
+    if (i >= TOKEN_COLORS.length) return
+    const cap = Math.min(remaining, holdings[TOKEN_COLORS[i]!])
+    for (let take = cap; take >= 0; take--) {
+      counts[i] = take
+      rec(i + 1, remaining - take)
+    }
+    counts[i] = 0
+  }
+  rec(0, k)
+  return out
+}
+
+/**
+ * 전 phase 완전(total) 열거 (docs/ARCHITECTURE.md §3)
+ * 불변식(예외 없음): phase≠gameOver ⇒ length ≥ 1, 반환된 모든 액션은
+ * applyAction이 throw 없이 적용되고 isLegal=true.
+ * - play: 4대 행동 전 조합. PURCHASE는 canonicalPayment 1개로 대표 (§9-L의
+ *   황금 배분 자유는 UI의 PaymentModal이 노출 — 열거 폭발 방지)
+ * - discard: 반납 조합 전수, chooseNoble: 후보 전체, play 공집합이면 [PASS]
+ */
+export function legalActions(state: GameState): readonly Action[] {
+  const phase = state.phase
+  if (phase.kind === 'gameOver') return []
+
+  const player = state.players[state.currentPlayer]!
+
+  if (phase.kind === 'discard') {
+    return discardCombos(player.tokens, phase.mustDiscard).map((t) => ({
+      type: 'DISCARD',
+      tokens: t,
+    }))
+  }
+
+  if (phase.kind === 'chooseNoble') {
+    return phase.options.map((nobleId) => ({ type: 'CHOOSE_NOBLE', nobleId }))
+  }
+
+  const actions: Action[] = []
+
+  // 행동 A (§4.1 엄격 해석: 정확히 min(3, 남은 색 수)개)
+  const available = GEM_COLORS.filter((g) => state.supply[g] > 0)
+  const required = Math.min(3, available.length)
+  if (required > 0) {
+    for (const combo of chooseK(available, required)) {
+      actions.push({ type: 'TAKE_DIFFERENT', colors: combo })
+    }
+  }
+
+  // 행동 B (§4.2)
+  for (const c of GEM_COLORS) {
+    if (state.supply[c] >= 4) actions.push({ type: 'TAKE_SAME', color: c })
+  }
+
+  // 행동 C (§4.3) — 보드의 HIDDEN_CARD(-1, 탐색 국면)는 제외
+  if (player.reserved.length < RESERVE_LIMIT) {
+    for (const row of state.board) {
+      for (const id of row) {
+        if (id !== null && id >= 0) actions.push({ type: 'RESERVE_BOARD', cardId: id })
+      }
+    }
+    for (const tier of [1, 2, 3] as const) {
+      if (state.decks[tier - 1]!.length > 0) actions.push({ type: 'RESERVE_DECK', tier })
+    }
+  }
+
+  // 행동 D (§4.4) — 공개 카드 + 자신의 예약 카드 (마스킹 카드 제외)
+  const purchasable: CardId[] = []
+  for (const row of state.board) {
+    for (const id of row) {
+      if (id !== null && id >= 0) purchasable.push(id)
+    }
+  }
+  for (const r of player.reserved) {
+    if (r.cardId >= 0) purchasable.push(r.cardId)
+  }
+  for (const id of purchasable) {
+    const card = CARDS[id]!
+    if (canAfford(player, card)) {
+      actions.push({ type: 'PURCHASE', cardId: id, payment: canonicalPayment(player, card) })
+    }
+  }
+
+  // §9-G: 합법 행동 공집합이면 PASS가 유일 합법수
+  if (actions.length === 0) return [{ type: 'PASS' }]
+  return actions
 }

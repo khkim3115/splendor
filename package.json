@@ -10,6 +10,7 @@
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -22,6 +23,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^9.0.0",
     "eslint-plugin-react-hooks": "^6.0.0",
     "fast-check": "^4.0.0",

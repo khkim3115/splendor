@@ -1,7 +1,7 @@
 // TokenMap/GemMap 순수 연산 유틸.
 // hashState(JSON.stringify 기반)의 결정론을 위해 모든 맵은 고정 키 순서 리터럴로만 생성한다.
 
-import { TOKEN_COLORS, type GemColor, type GemMap, type TokenColor, type TokenMap } from './types'
+import type { GemColor, GemMap, TokenColor, TokenMap } from './types'
 
 export const ZERO_TOKENS: TokenMap = { white: 0, blue: 0, green: 0, red: 0, black: 0, gold: 0 }
 export const ZERO_GEMS: GemMap = { white: 0, blue: 0, green: 0, red: 0, black: 0 }
@@ -42,8 +42,4 @@ export function withGemDelta(m: GemMap, color: GemColor, delta: number): GemMap 
   const out = { white: m.white, blue: m.blue, green: m.green, red: m.red, black: m.black }
   out[color] += delta
   return out
-}
-
-export function hasNegative(m: TokenMap): boolean {
-  return TOKEN_COLORS.some((c) => m[c] < 0)
 }
