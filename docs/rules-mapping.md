@@ -1,7 +1,7 @@
 # 룰 조항 ↔ 테스트 매핑
 
 > 자동 생성 문서 — 직접 편집 금지. 재생성: `node scripts/gen-rules-mapping.mjs`
-> 원본 조항: [RULES.md](RULES.md) · 태그된 테스트 284건 / 조항 42개
+> 원본 조항: [RULES.md](RULES.md) · 태그된 테스트 285건 / 조항 42개
 
 | 조항 | 테스트 수 | 테스트 |
 |---|---|---|
@@ -46,4 +46,4 @@
 | **§9-L** | 7 | `adversarial/conservation.attack.test.ts` — §9-L+§9-M 보석 보유 중 황금 대체 지불 — 지불 토큰 전액이 공급처로 정확히 회수된다<br>`adversarial/purchase.attack.test.ts` — §4.4.1/§9-L 황금 배분 조합 공격<br>`adversarial/purchase.attack.test.ts` — §9-L: 보유 보석 대신 황금을 두 색에 분산 대체하는 비정규 지불도 수락된다<br>`engine/helpers.test.ts` — paymentBounds: 실요구량·최소 황금·대체 가능 색을 정확히 계산한다 (§4.4.1, §9-L)<br>`engine/payment.test.ts` — §4.4.1-4 / §9-L 지불 구성 검증<br>`engine/payment.test.ts` — §9-L: 보석을 갖고 있어도 그 자리에 황금을 대신 지불할 수 있다<br>`engine/purchase.test.ts` — §9-L: 보석을 갖고 있어도 황금으로 대신 지불할 수 있다 |
 | **§9-M** | 5 | `adversarial/conservation.attack.test.ts` — §1+§9-M 토큰 색별 총량 보존 — 장기 무작위 합법 시퀀스의 매 수에서 공급처+전원 소지 = 초기 총량<br>`adversarial/conservation.attack.test.ts` — §9-L+§9-M 보석 보유 중 황금 대체 지불 — 지불 토큰 전액이 공급처로 정확히 회수된다<br>`adversarial/purchase.attack.test.ts` — §9-M 지불 후 공급처 정합<br>`adversarial/purchase.attack.test.ts` — §9-M: 지불 토큰은 색별로 정확히 공급처로만 가고, 상대 플레이어에게는 가지 않는다<br>`engine/purchase.test.ts` — §9-M: 지불한 토큰(황금 포함)은 공급처로 되돌아간다 |
 | **§9-N** | 3 | `adversarial/purchase.attack.test.ts` — §6/§9-J/§9-N 구매로 같은 턴 귀족 조건 신규 충족<br>`adversarial/purchase.attack.test.ts` — §9-N: 예약 카드의 보너스는 귀족 판정에 포함되지 않는다<br>`engine/purchase.test.ts` — §9-N: 예약 상태의 카드는 점수·보너스에 반영되지 않는다 |
-| **§9-O** | 6 | `adversarial/legalActions.attack.test.ts` — 공격: §9-O — 마스킹 상태(playerView)에서의 열거 안전성<br>`engine/view.test.ts` — §9-O 정보 공개와 마스킹<br>`engine/view.test.ts` — §9-O: 덱에서 비공개 예약한 카드는 본인에게만 보인다<br>`engine/view.test.ts` — §9-O: 공개 카드를 예약한 것은 마스킹되지 않는다 (전원이 이미 본 정보)<br>`engine/view.test.ts` — §9-O: 덱 내용은 가려지고 길이만 유지된다<br>`engine/view.test.ts` — §9-O: 토큰·구매 카드·점수·귀족은 전원 공개로 유지된다 |
+| **§9-O** | 7 | `adversarial/legalActions.attack.test.ts` — 공격: §9-O — 마스킹 상태(playerView)에서의 열거 안전성<br>`engine/view.test.ts` — §9-O 정보 공개와 마스킹<br>`engine/view.test.ts` — §9-O: 덱에서 비공개 예약한 카드는 본인에게만 보인다<br>`engine/view.test.ts` — §9-O: 공개 카드를 예약한 것은 마스킹되지 않는다 (전원이 이미 본 정보)<br>`engine/view.test.ts` — §9-O: 덱 내용은 가려지고 길이만 유지된다<br>`engine/view.test.ts` — §9-O: 토큰·구매 카드·점수·귀족은 전원 공개로 유지된다<br>`store/gameStore.test.ts` — 로드 직후에는 항상 핸드오프 게이트가 선다 (§9-O — 누가 기기를 들고 있는지 모른다) |

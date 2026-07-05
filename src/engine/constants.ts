@@ -30,3 +30,9 @@ export const RESERVE_LIMIT = 3
 
 /** 게임 종료 트리거 점수 (RULES §8) */
 export const WINNING_PRESTIGE = 15
+
+/**
+ * 룰 해석 버전 — 엔진의 룰 해석([구현 결정] 포함)이 바뀔 때 수동 증가.
+ * 세이브 호환성 판정에 쓰인다 (docs/ROADMAP.md 운영 규약 2)
+ */
+export const RULES_VERSION = '1.0.0'

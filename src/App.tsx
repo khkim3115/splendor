@@ -1,10 +1,15 @@
-import { ENGINE_VERSION } from './engine'
+import { useGameStore } from './store/gameStore'
+import { GameScreen } from './ui/screens/GameScreen'
+import { ResultScreen } from './ui/screens/ResultScreen'
+import { SetupScreen } from './ui/screens/SetupScreen'
+import './ui/styles.css'
 
 export default function App() {
-  return (
-    <main>
-      <h1>스플랜더</h1>
-      <p>개발 중 — 엔진 버전 {ENGINE_VERSION}</p>
-    </main>
-  )
+  const committed = useGameStore((s) => s.committed)
+
+  if (!committed) return <SetupScreen />
+  if (committed.phase.kind === 'gameOver') {
+    return <ResultScreen committed={committed} result={committed.phase.result} />
+  }
+  return <GameScreen committed={committed} />
 }

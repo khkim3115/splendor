@@ -11,7 +11,7 @@ export default defineConfig({
     format: 'es',
   },
   test: {
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     environment: 'node',
     coverage: {
       provider: 'v8',
