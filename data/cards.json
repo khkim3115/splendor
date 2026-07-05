@@ -1,0 +1,1204 @@
+{
+  "_meta": {
+    "description": "스플랜더 원작과 동일한 기능 데이터 (개발 카드 90장 + 귀족 타일 10장). 일러스트 등 시각 자산은 포함하지 않음.",
+    "verification": "독립적인 두 에이전트가 서로 다른 출처 집합에서 수집한 결과가 완전 일치. 구조 불변식(90장=40/30/20, 색별 8/6/4, 중복 없음, 티어별 점수 총합 5/55/80, 귀족 10장 전원 3점·4+4 또는 3+3+3 패턴) 전체 통과.",
+    "colors": {
+      "white": "다이아몬드",
+      "blue": "사파이어",
+      "green": "에메랄드",
+      "red": "루비",
+      "black": "오닉스"
+    },
+    "sources": [
+      "https://raw.githubusercontent.com/bouk/splendimax/master/Splendor%20Cards.csv",
+      "https://docs.google.com/spreadsheets/d/15ghp8rJ_vdVgxZIVJGawAYQXRMZSVHJYpZRfQUplAhE/edit (Splendor cards list spreadsheet, exported as CSV; linked from BGG community card-list resources)",
+      "https://github.com/seal256/splendor/blob/master/pysplendor/splendor.py (CARDS and NOBLES tables)",
+      "https://raw.githubusercontent.com/jrios6/Splendor/master/splendor-server/data/nobles.csv",
+      "https://boardgamegeek.com/filepage/136731/full-splendor-card-list-wpics (BGG file page referencing the full card list)"
+    ]
+  },
+  "cards": [
+    {
+      "tier": 1,
+      "bonus": "black",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 1,
+        "red": 3,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "black",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 2,
+        "red": 1,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "black",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 3,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "black",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 1,
+        "green": 1,
+        "red": 1,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "black",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 2,
+        "green": 1,
+        "red": 1,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "black",
+      "points": 0,
+      "cost": {
+        "white": 2,
+        "blue": 0,
+        "green": 2,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "black",
+      "points": 0,
+      "cost": {
+        "white": 2,
+        "blue": 2,
+        "green": 0,
+        "red": 1,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "black",
+      "points": 1,
+      "cost": {
+        "white": 0,
+        "blue": 4,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "blue",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 3
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "blue",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 2,
+        "red": 0,
+        "black": 2
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "blue",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 1,
+        "green": 3,
+        "red": 1,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "blue",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 2
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "blue",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 0,
+        "green": 1,
+        "red": 1,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "blue",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 0,
+        "green": 1,
+        "red": 2,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "blue",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 0,
+        "green": 2,
+        "red": 2,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "blue",
+      "points": 1,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 4,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "green",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 3,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "green",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 1,
+        "green": 0,
+        "red": 2,
+        "black": 2
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "green",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 2,
+        "green": 0,
+        "red": 2,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "green",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 1,
+        "green": 0,
+        "red": 1,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "green",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 1,
+        "green": 0,
+        "red": 1,
+        "black": 2
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "green",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 3,
+        "green": 1,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "green",
+      "points": 0,
+      "cost": {
+        "white": 2,
+        "blue": 1,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "green",
+      "points": 1,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 4
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "red",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 2,
+        "green": 1,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "red",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 0,
+        "green": 0,
+        "red": 1,
+        "black": 3
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "red",
+      "points": 0,
+      "cost": {
+        "white": 1,
+        "blue": 1,
+        "green": 1,
+        "red": 0,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "red",
+      "points": 0,
+      "cost": {
+        "white": 2,
+        "blue": 0,
+        "green": 0,
+        "red": 2,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "red",
+      "points": 0,
+      "cost": {
+        "white": 2,
+        "blue": 0,
+        "green": 1,
+        "red": 0,
+        "black": 2
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "red",
+      "points": 0,
+      "cost": {
+        "white": 2,
+        "blue": 1,
+        "green": 1,
+        "red": 0,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "red",
+      "points": 0,
+      "cost": {
+        "white": 3,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "red",
+      "points": 1,
+      "cost": {
+        "white": 4,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "white",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 2,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "white",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 1,
+        "green": 1,
+        "red": 1,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "white",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 1,
+        "green": 2,
+        "red": 1,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "white",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 2,
+        "green": 0,
+        "red": 0,
+        "black": 2
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "white",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 2,
+        "green": 2,
+        "red": 0,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "white",
+      "points": 0,
+      "cost": {
+        "white": 0,
+        "blue": 3,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "white",
+      "points": 0,
+      "cost": {
+        "white": 3,
+        "blue": 1,
+        "green": 0,
+        "red": 0,
+        "black": 1
+      }
+    },
+    {
+      "tier": 1,
+      "bonus": "white",
+      "points": 1,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 4,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "black",
+      "points": 1,
+      "cost": {
+        "white": 3,
+        "blue": 0,
+        "green": 3,
+        "red": 0,
+        "black": 2
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "black",
+      "points": 1,
+      "cost": {
+        "white": 3,
+        "blue": 2,
+        "green": 2,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "black",
+      "points": 2,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 5,
+        "red": 3,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "black",
+      "points": 2,
+      "cost": {
+        "white": 0,
+        "blue": 1,
+        "green": 4,
+        "red": 2,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "black",
+      "points": 2,
+      "cost": {
+        "white": 5,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "black",
+      "points": 3,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 6
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "blue",
+      "points": 1,
+      "cost": {
+        "white": 0,
+        "blue": 2,
+        "green": 2,
+        "red": 3,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "blue",
+      "points": 1,
+      "cost": {
+        "white": 0,
+        "blue": 2,
+        "green": 3,
+        "red": 0,
+        "black": 3
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "blue",
+      "points": 2,
+      "cost": {
+        "white": 0,
+        "blue": 5,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "blue",
+      "points": 2,
+      "cost": {
+        "white": 2,
+        "blue": 0,
+        "green": 0,
+        "red": 1,
+        "black": 4
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "blue",
+      "points": 2,
+      "cost": {
+        "white": 5,
+        "blue": 3,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "blue",
+      "points": 3,
+      "cost": {
+        "white": 0,
+        "blue": 6,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "green",
+      "points": 1,
+      "cost": {
+        "white": 2,
+        "blue": 3,
+        "green": 0,
+        "red": 0,
+        "black": 2
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "green",
+      "points": 1,
+      "cost": {
+        "white": 3,
+        "blue": 0,
+        "green": 2,
+        "red": 3,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "green",
+      "points": 2,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 5,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "green",
+      "points": 2,
+      "cost": {
+        "white": 0,
+        "blue": 5,
+        "green": 3,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "green",
+      "points": 2,
+      "cost": {
+        "white": 4,
+        "blue": 2,
+        "green": 0,
+        "red": 0,
+        "black": 1
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "green",
+      "points": 3,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 6,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "red",
+      "points": 1,
+      "cost": {
+        "white": 0,
+        "blue": 3,
+        "green": 0,
+        "red": 2,
+        "black": 3
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "red",
+      "points": 1,
+      "cost": {
+        "white": 2,
+        "blue": 0,
+        "green": 0,
+        "red": 2,
+        "black": 3
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "red",
+      "points": 2,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 5
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "red",
+      "points": 2,
+      "cost": {
+        "white": 1,
+        "blue": 4,
+        "green": 2,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "red",
+      "points": 2,
+      "cost": {
+        "white": 3,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 5
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "red",
+      "points": 3,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 6,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "white",
+      "points": 1,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 3,
+        "red": 2,
+        "black": 2
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "white",
+      "points": 1,
+      "cost": {
+        "white": 2,
+        "blue": 3,
+        "green": 0,
+        "red": 3,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "white",
+      "points": 2,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 5,
+        "black": 0
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "white",
+      "points": 2,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 5,
+        "black": 3
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "white",
+      "points": 2,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 1,
+        "red": 4,
+        "black": 2
+      }
+    },
+    {
+      "tier": 2,
+      "bonus": "white",
+      "points": 3,
+      "cost": {
+        "white": 6,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "black",
+      "points": 3,
+      "cost": {
+        "white": 3,
+        "blue": 3,
+        "green": 5,
+        "red": 3,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "black",
+      "points": 4,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 7,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "black",
+      "points": 4,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 3,
+        "red": 6,
+        "black": 3
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "black",
+      "points": 5,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 7,
+        "black": 3
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "blue",
+      "points": 3,
+      "cost": {
+        "white": 3,
+        "blue": 0,
+        "green": 3,
+        "red": 3,
+        "black": 5
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "blue",
+      "points": 4,
+      "cost": {
+        "white": 6,
+        "blue": 3,
+        "green": 0,
+        "red": 0,
+        "black": 3
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "blue",
+      "points": 4,
+      "cost": {
+        "white": 7,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "blue",
+      "points": 5,
+      "cost": {
+        "white": 7,
+        "blue": 3,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "green",
+      "points": 3,
+      "cost": {
+        "white": 5,
+        "blue": 3,
+        "green": 0,
+        "red": 3,
+        "black": 3
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "green",
+      "points": 4,
+      "cost": {
+        "white": 0,
+        "blue": 7,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "green",
+      "points": 4,
+      "cost": {
+        "white": 3,
+        "blue": 6,
+        "green": 3,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "green",
+      "points": 5,
+      "cost": {
+        "white": 0,
+        "blue": 7,
+        "green": 3,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "red",
+      "points": 3,
+      "cost": {
+        "white": 3,
+        "blue": 5,
+        "green": 3,
+        "red": 0,
+        "black": 3
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "red",
+      "points": 4,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 7,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "red",
+      "points": 4,
+      "cost": {
+        "white": 0,
+        "blue": 3,
+        "green": 6,
+        "red": 3,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "red",
+      "points": 5,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 7,
+        "red": 3,
+        "black": 0
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "white",
+      "points": 3,
+      "cost": {
+        "white": 0,
+        "blue": 3,
+        "green": 3,
+        "red": 5,
+        "black": 3
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "white",
+      "points": 4,
+      "cost": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 7
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "white",
+      "points": 4,
+      "cost": {
+        "white": 3,
+        "blue": 0,
+        "green": 0,
+        "red": 3,
+        "black": 6
+      }
+    },
+    {
+      "tier": 3,
+      "bonus": "white",
+      "points": 5,
+      "cost": {
+        "white": 3,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 7
+      }
+    }
+  ],
+  "nobles": [
+    {
+      "points": 3,
+      "requirement": {
+        "white": 0,
+        "blue": 0,
+        "green": 0,
+        "red": 4,
+        "black": 4
+      }
+    },
+    {
+      "points": 3,
+      "requirement": {
+        "white": 0,
+        "blue": 0,
+        "green": 3,
+        "red": 3,
+        "black": 3
+      }
+    },
+    {
+      "points": 3,
+      "requirement": {
+        "white": 0,
+        "blue": 0,
+        "green": 4,
+        "red": 4,
+        "black": 0
+      }
+    },
+    {
+      "points": 3,
+      "requirement": {
+        "white": 0,
+        "blue": 3,
+        "green": 3,
+        "red": 3,
+        "black": 0
+      }
+    },
+    {
+      "points": 3,
+      "requirement": {
+        "white": 0,
+        "blue": 4,
+        "green": 4,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "points": 3,
+      "requirement": {
+        "white": 3,
+        "blue": 0,
+        "green": 0,
+        "red": 3,
+        "black": 3
+      }
+    },
+    {
+      "points": 3,
+      "requirement": {
+        "white": 3,
+        "blue": 3,
+        "green": 0,
+        "red": 0,
+        "black": 3
+      }
+    },
+    {
+      "points": 3,
+      "requirement": {
+        "white": 3,
+        "blue": 3,
+        "green": 3,
+        "red": 0,
+        "black": 0
+      }
+    },
+    {
+      "points": 3,
+      "requirement": {
+        "white": 4,
+        "blue": 0,
+        "green": 0,
+        "red": 0,
+        "black": 4
+      }
+    },
+    {
+      "points": 3,
+      "requirement": {
+        "white": 4,
+        "blue": 4,
+        "green": 0,
+        "red": 0,
+        "black": 0
+      }
+    }
+  ]
+}
