@@ -9,6 +9,7 @@ import { setupGame } from '../../src/engine/setup'
 import { createRng, nextInt, type RngState } from '../../src/engine/rng'
 import type { GameState } from '../../src/engine/types'
 import { chooseActionSync } from '../../src/ai/greedy'
+import { createHardAgent } from '../../src/ai/mcts'
 import { config } from '../helpers'
 
 function sampleStates(games: number, everyN: number): GameState[] {
@@ -56,6 +57,23 @@ describe('AI legality fuzz', () => {
     expect(checked).toBeGreaterThanOrEqual(60)
   })
 
+  it('어려움: 수십 국면(전 phase, MCTS 경로)에서 항상 합법 수를 반환한다', { timeout: 120_000 }, () => {
+    const states = sampleStates(6, 10)
+    const agent = createHardAgent() // 게임을 넘나드는 호출에도 합법성 유지 (계획 오적용의 국면 대조는 mcts.test.ts가 검증)
+    let rng: RngState = createRng(3)
+    let checked = 0
+    for (const s of states) {
+      if (checked >= 70) break
+      const view = playerView(s, s.currentPlayer)
+      const [action, next] = agent.chooseAction(view, s.currentPlayer, 10, rng, { maxIters: 48 })
+      rng = next
+      expect(isLegal(s, action), JSON.stringify({ action, phase: s.phase.kind })).toBe(true)
+      checked++
+    }
+    expect(checked).toBeGreaterThanOrEqual(60)
+    // discard/chooseNoble phase의 즉답 계약은 tests/ai/mcts.test.ts가 국면을 직접 채집해 검증한다
+  })
+
   it('공급 고갈·예약 가득 극단 국면에서도 합법 수를 반환한다', () => {
     // 교착 직전 상태 — PASS만 합법
     let s = setupGame(config(2, 9))
@@ -77,5 +95,7 @@ describe('AI legality fuzz', () => {
       const [action] = chooseActionSync(playerView(s, 0), 0, difficulty, createRng(3))
       expect(isLegal(s, action)).toBe(true)
     }
+    const [hardAction] = createHardAgent().chooseAction(playerView(s, 0), 0, 20, createRng(3))
+    expect(isLegal(s, hardAction)).toBe(true)
   })
 })

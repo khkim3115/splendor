@@ -52,4 +52,19 @@ describe('AiClient 폴백', () => {
     const action = await client.requestMove(s, s.currentPlayer, 'normal', 3)
     expect(isLegal(s, action)).toBe(true)
   })
+
+  it('Worker 크래시 후 hard는 메인스레드 MCTS 대신 그리디 폴백이다 (§5.3 — UI 블록 방지)', async () => {
+    vi.stubGlobal('Worker', SilentWorker)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const s = setupGame(config(2, 14))
+    const client = new AiClient()
+    client.killWorker()
+
+    const started = performance.now()
+    const action = await client.requestMove(s, s.currentPlayer, 'hard', 4)
+    expect(isLegal(s, action)).toBe(true)
+    expect(performance.now() - started).toBeLessThan(500) // 1,000ms 동기 MCTS가 아니라 즉답
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('폴백'))
+    warn.mockRestore()
+  })
 })

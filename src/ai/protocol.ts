@@ -16,6 +16,7 @@ export interface AiResponse {
   readonly actionJson: string
   readonly stats: {
     readonly elapsedMs: number
-    readonly algo: 'greedy1' | 'greedy2' | 'fallback'
+    readonly algo: 'greedy1' | 'greedy2' | 'mcts' | 'fallback'
+    readonly iters?: number // mcts 전용: 시뮬레이션 수
   }
 }

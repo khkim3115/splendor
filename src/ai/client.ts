@@ -9,6 +9,7 @@ import {
   type GameState,
 } from '../engine'
 import { chooseActionSync } from './greedy'
+import { createHardAgent } from './mcts'
 import type { AiRequest, AiResponse } from './protocol'
 
 /** 난이도별 계산 예산 (docs/AI_DESIGN.md §5.4) */
@@ -23,6 +24,12 @@ export function setAiDelayScale(scale: number): void {
   delayScale = scale
 }
 
+/** 테스트 전용: 난이도별 예산 재정의 (Worker 미지원 환경의 hard 완주 테스트 등) */
+let budgetOverride: Partial<Record<Difficulty, number>> = {}
+export function setAiBudgetOverride(override: Partial<Record<Difficulty, number>>): void {
+  budgetOverride = override
+}
+
 interface Pending {
   resolve: (action: Action) => void
   timer: ReturnType<typeof setTimeout>
@@ -34,6 +41,8 @@ export class AiClient {
   private workerBroken = false
   private nextId = 1
   private pending = new Map<number, Pending>()
+  /** Worker 미지원 환경의 메인스레드 hard 경로 전용 (Worker 경로에선 Worker 내부 인스턴스 사용) */
+  private hardAgent = createHardAgent()
 
   /** 디버그 훅: Worker 강제 종료 → 그리디 폴백 경로 검증용 */
   killWorker(): void {
@@ -86,7 +95,7 @@ export class AiClient {
     aiSeed: number,
   ): Promise<Action> {
     const view = playerView(committed, me)
-    const budgetMs = BUDGET_MS[difficulty]
+    const budgetMs = budgetOverride[difficulty] ?? BUDGET_MS[difficulty]
     const fallback = (): Action => {
       // 메인스레드 그리디 1-ply — <5ms, 게임이 멈추지 않는다 (§5.3)
       const [action] = chooseActionSync(view, me, 'easy', createRng(aiSeed))
@@ -102,6 +111,17 @@ export class AiClient {
     if (!worker) {
       // Worker 미지원 환경(테스트 등): 메인스레드에서 동일 코드 실행
       move = Promise.resolve().then(() => {
+        if (difficulty === 'hard') {
+          if (this.workerBroken) {
+            // Worker 크래시 후의 hard는 §5.3 그리디 폴백 — 메인스레드 1초 동기
+            // MCTS는 착수마다 UI를 멈추므로 응답성을 우선한다
+            console.warn('AI Worker 사용 불가(hard) — 그리디 폴백 (§5.3)')
+            return fallback()
+          }
+          // Worker 자체가 없는 환경(jsdom 테스트 등)만 메인스레드 MCTS
+          const [action] = this.hardAgent.chooseAction(view, me, budgetMs, createRng(aiSeed))
+          return action
+        }
         const [action] = chooseActionSync(view, me, difficulty, createRng(aiSeed))
         return action
       })

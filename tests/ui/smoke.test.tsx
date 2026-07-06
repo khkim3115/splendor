@@ -50,6 +50,18 @@ describe('UI 스모크', () => {
     expect(screen.getByLabelText('토큰 공급처')).toBeTruthy()
   })
 
+  it("'AI · 어려움' 좌석 선택이 difficulty: 'hard'로 매핑된다 (M6)", async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.selectOptions(screen.getByLabelText('2번 자리 종류'), 'hard')
+    await user.type(screen.getByLabelText('시드 (선택)'), '42')
+    await user.click(screen.getByRole('button', { name: '게임 시작' }))
+
+    const players = useGameStore.getState().committed!.config.players
+    expect(players[1]).toEqual({ type: 'ai', name: 'AI · 어려움 2', difficulty: 'hard' })
+  })
+
   it('토큰 3개 집기 → 확정 → 로그 기록 + 핸드오프 오버레이', async () => {
     const user = userEvent.setup()
     useGameStore.getState().newGame(config(2, 42))
