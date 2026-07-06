@@ -11,6 +11,7 @@ import {
   type TokenMap,
 } from '../../../engine'
 import { useGameStore } from '../../../store/gameStore'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { COLOR_KO, cardKo } from '../../i18n/ko'
 import { GemIcon } from '../common/GemIcon'
 
@@ -28,6 +29,8 @@ export function PaymentModal({
 }) {
   const dispatch = useGameStore((s) => s.dispatch)
   const [extra, setExtra] = useState<Record<GemColor, number>>(ZERO_EXTRA)
+  // 닫기 가능한 모달 — Esc로 닫힌다
+  const trapRef = useFocusTrap<HTMLDivElement>(onClose)
 
   const card = CARDS[cardId]
   if (!card) return null
@@ -49,7 +52,7 @@ export function PaymentModal({
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="지불 조정">
-      <div className="modal">
+      <div className="modal" ref={trapRef}>
         <h2>지불 조정 (§9-L)</h2>
         <p>
           {cardKo(cardId)} — 보석 대신 황금으로 지불할 수 있습니다. (여분 황금 {spareGold}개)

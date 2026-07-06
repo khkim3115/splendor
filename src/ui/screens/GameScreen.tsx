@@ -5,7 +5,9 @@ import { CardBoard } from '../components/board/CardBoard'
 import { NobleRow } from '../components/board/NobleRow'
 import { TokenSupply } from '../components/board/TokenSupply'
 import { ActionBar } from '../components/common/ActionBar'
+import { AiThinkingOverlay } from '../components/common/AiThinkingIndicator'
 import { Announcer } from '../components/common/Announcer'
+import { FlyLayer } from '../components/common/FlyLayer'
 import { GameLog } from '../components/common/GameLog'
 import { TurnBanner } from '../components/common/TurnBanner'
 import { DiscardModal } from '../components/modals/DiscardModal'
@@ -32,12 +34,15 @@ export function GameScreen({ committed }: { committed: GameState }) {
     [committed],
   )
   const humanTurn = committed.config.players[committed.currentPlayer]?.type === 'human'
+  const aiName = committed.config.players[committed.currentPlayer]?.name ?? 'AI'
+  const showAiOverlay = aiThinking && !humanTurn && !handoffPending
 
   return (
     <main className="game-screen">
       <TurnBanner view={view} aiThinking={aiThinking} canUndo={undoable} onUndo={undo} />
       <div className="game-layout">
         <section className={`board-area ${humanTurn ? '' : 'ai-lock'}`}>
+          {showAiOverlay && <AiThinkingOverlay name={aiName} />}
           <NobleRow view={view} />
           <CardBoard view={view} />
           <TokenSupply view={view} />
@@ -58,6 +63,7 @@ export function GameScreen({ committed }: { committed: GameState }) {
         <PaymentModal view={view} cardId={paymentCard} onClose={() => setPaymentCard(null)} />
       )}
       {handoffPending && <HandoffOverlay view={view} />}
+      <FlyLayer />
     </main>
   )
 }

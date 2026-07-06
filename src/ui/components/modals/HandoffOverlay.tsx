@@ -1,5 +1,6 @@
 import type { GameState } from '../../../engine'
 import { useGameStore, viewerIndexFor } from '../../../store/gameStore'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 
 /**
  * 핫시트 기기 전달 오버레이 — 표시 중 화면은 이미 "기기를 들 사람"의
@@ -9,6 +10,7 @@ import { useGameStore, viewerIndexFor } from '../../../store/gameStore'
  */
 export function HandoffOverlay({ view }: { view: GameState }) {
   const acknowledgeHandoff = useGameStore((s) => s.acknowledgeHandoff)
+  const trapRef = useFocusTrap<HTMLDivElement>()
   const current = view.config.players[view.currentPlayer]
   const isAiTurn = current?.type === 'ai'
   const holder = isAiTurn
@@ -17,7 +19,7 @@ export function HandoffOverlay({ view }: { view: GameState }) {
 
   return (
     <div className="modal-backdrop handoff" role="dialog" aria-modal="true" aria-label="기기 전달">
-      <div className="modal handoff-modal">
+      <div className="modal handoff-modal" ref={trapRef}>
         <h2>{isAiTurn ? '게임 재개' : '기기를 전달하세요'}</h2>
         <p>
           {isAiTurn ? (

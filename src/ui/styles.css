@@ -82,7 +82,8 @@
 @keyframes pulse { 50% { opacity: 0.6; } }
 
 .game-layout { display: flex; gap: 12px; flex: 1; min-height: 0; }
-.board-area { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+/* position: relative — AI 사고 오버레이(.ai-thinking-overlay)의 위치 기준 */
+.board-area { display: flex; flex-direction: column; gap: 10px; flex: 1; position: relative; }
 .side-area {
   width: 300px; flex-shrink: 0;
   display: flex; flex-direction: column; gap: 8px;
@@ -241,9 +242,102 @@
 .result-table thead { background: #e4d9bf; }
 .winner-row { background: #fdf3d7; font-weight: 700; }
 
-/* 좁은 화면 */
+/* ══════════════════════════════════════════════════════════════
+   M7 — 접근성·연출·모바일 (docs/ROADMAP.md M7)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 키보드 포커스 가시화 (마우스 클릭엔 링 없음) ── */
+:focus-visible {
+  outline: 3px solid #ffd76e;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.modal :focus-visible,
+.setup-card :focus-visible { outline-color: var(--accent); }
+
+/* ── AI 사고 인디케이터 ── */
+.ai-badge { display: inline-flex; align-items: center; gap: 5px; }
+.thinking-dots { display: inline-flex; align-items: center; gap: 3px; }
+.thinking-dots i {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: currentColor; opacity: 0.3;
+  animation: thinkingDot 1s infinite ease-in-out;
+}
+.thinking-dots i:nth-child(2) { animation-delay: 0.16s; }
+.thinking-dots i:nth-child(3) { animation-delay: 0.32s; }
+@keyframes thinkingDot {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+.ai-thinking-overlay {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; justify-content: center; align-items: flex-start;
+  padding-top: 10px; pointer-events: none;
+}
+.ai-thinking-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(36, 73, 58, 0.94); color: var(--paper);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px; padding: 8px 16px; font-weight: 600; font-size: 0.9rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+/* ── 연출 레이어: 공급처 ↔ 패널 사이를 나는 일회용 보석 칩 ── */
+.fly-layer { position: fixed; inset: 0; z-index: 30; pointer-events: none; overflow: hidden; }
+.fly-gem { position: absolute; width: 22px; height: 22px; will-change: transform, opacity; }
+.fly-gem svg { display: block; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)); }
+
+/* ── reduced-motion: CSS 애니메이션/트랜지션 전면 정지 ──
+   (WAAPI 연출은 useReducedMotion으로 JS에서 별도 차단한다) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── 태블릿: 세로 스택 ── */
 @media (max-width: 900px) {
   .game-layout { flex-direction: column; }
   .side-area { width: 100%; }
   :root { --card-w: 72px; --card-h: 102px; }
+}
+
+/* ── 모바일 세로(≤480px, 예: 390×844): 터치 타깃 ≥44px · 가로 스크롤 방지 ── */
+@media (max-width: 480px) {
+  :root { --card-w: 58px; --card-h: 82px; }
+  .game-screen { padding: 8px; gap: 8px; overflow-x: hidden; }
+
+  /* 터치 타깃 — 주요 조작 버튼 ≥44px */
+  .btn { min-height: 44px; padding: 10px 16px; }
+  .btn-lg { min-height: 50px; }
+  .btn-step { min-width: 44px; min-height: 44px; padding: 0; font-size: 1.3rem; }
+  .setup-row input, .setup-row select { min-height: 44px; }
+
+  /* 토큰 공급처: 줄바꿈 + ≥44px 원 */
+  .token-supply { flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .token-pile { width: 52px; height: 52px; }
+  .token-picked-badge { width: 20px; height: 20px; }
+
+  /* 보드 행: 넘치면 행 안에서만 가로 스크롤 (페이지 가로 스크롤 금지) */
+  .board-row { overflow-x: auto; padding-bottom: 2px; }
+  .card-board { min-width: 0; }
+
+  /* 귀족 타일 축소 */
+  .noble-row { flex-wrap: wrap; }
+  .noble-tile { width: 60px; height: 60px; }
+
+  /* 플레이어 패널 축약 — 여백·칩 축소로 세로 공간 절약 */
+  .player-panel { padding: 6px 8px; gap: 3px; }
+  .mini-chip, .bonus-chip { font-size: 0.72rem; padding: 1px 5px 1px 2px; }
+  .game-log { max-height: 150px; min-height: 88px; font-size: 0.78rem; }
+
+  /* 확정 버튼이 늘 닿도록 액션 바를 하단 고정 */
+  .action-bar { position: sticky; bottom: 0; z-index: 15; }
+
+  .setup-screen { padding: 24px 12px; }
+  .setup-screen h1 { font-size: 2rem; }
+  .modal { padding: 18px 16px; }
 }

@@ -6,7 +6,7 @@ export function NobleTile({ nobleId }: { nobleId: NobleId }) {
   const noble = NOBLES[nobleId]
   if (!noble) return null
   return (
-    <div className="noble-tile" aria-label={nobleKo(nobleId)}>
+    <div className="noble-tile" aria-label={nobleKo(nobleId)} data-noble-id={nobleId}>
       <span className="noble-points">3</span>
       <div className="noble-reqs">
         {GEM_COLORS.filter((g) => noble.requirement[g] > 0).map((g) => (
