@@ -74,6 +74,7 @@ export function mctsChoose(view: GameState, me: number, budgetMs: number, rng: R
   let iters = 0;
   while (true) {
     if ((iters & 127) === 0 && now() >= deadline) break;   // 시간 체크는 128회마다 (설계안 2)
+    // (M6-2 실측 후 32회로 하향 — 128은 2,000 sim/s 가정. 실측 ~2.6ms/iter에서는 배치 오버런이 하드 타임아웃 1,500ms를 위협. src/ai/mcts.ts TIME_CHECK_MASK)
     let s = root, node = tree.root;
     // ② 선택/확장: 트리 하강은 applyResolved(§4.3) — play 액션만 엣지가 된다
     // ③ 플레이아웃: 그리디 정책(evaluate full의 1-ply)으로 깊이 10 truncate

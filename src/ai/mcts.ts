@@ -1,7 +1,8 @@
 // 어려움 — anytime MCTS (docs/AI_DESIGN.md §4)
 // determinize 1회(§4.2) → UCT 선택/확장(트리 하강은 applyResolved, play 액션만 엣지 §4.3)
 // → 그리디 플레이아웃 truncate → 플레이어별 평가 max-n 백업 → 최다 방문 수 반환.
-// 벽시계 예산은 128회 간격으로만 검사한다(§4.1 설계안 2) — 언제 끊겨도 최선수 보유.
+// 벽시계 예산은 32회 간격으로만 검사한다(TIME_CHECK_MASK 주석 — §4.1의 128에서
+// 실측 후 하향). 언제 끊겨도 최선수 보유.
 //
 // 무작위성은 determinize의 시드 RNG뿐이다. 플레이아웃은 결정적 그리디(§4.1 ③),
 // UCB/최다 방문 동률은 앞 인덱스 우선 — 같은 (view, seed, iteration 수)면 같은 수.
@@ -35,6 +36,18 @@ const PLAYOUT_DEPTH = 6
 const TOP_K = 8
 
 /**
+ * 시간 체크 간격 마스크 — 32회마다 performance.now() 검사.
+ * §4.1의 128은 목표 2,000 sim/s(0.5ms/iter) 가정의 파라미터다. 실측 단가는
+ * ~2.6ms/iter(M6-1 벤치 조합 347~402 sim/s, 실코드 384 iter/1000ms)라 128 배치는
+ * 단독 실행 ~333ms·부하 시 ~0.8s 무중단이 되어, budget 1000ms + 배치 오버런이
+ * DoD("1초 예산 내 착수")와 client.ts 하드 타임아웃(1500ms)을 위협한다 — 초과 시
+ * 폴백이 쉬움 1-ply로 수를 확정하고 진짜 MCTS 응답은 폐기된다(조용한 강등).
+ * 32로 하향하면 무중단 배치 ~83ms(4배 축소). performance.now() 호출 비용(~0.1µs)은
+ * 단가 대비 무시 수준이라 처리량 손실은 없다.
+ */
+const TIME_CHECK_MASK = 31
+
+/**
  * 평가값 → [0,1] 정규화 스케일 (시그모이드 1/(1+e^(-v/50))).
  * evaluate('full')는 paranoid-lite 상대값이고 전형적 격차 크기가 SOFTMAX_SCALE=25
  * (greedy.ts)이므로 그 2배를 스케일로 잡아 전형 격차(±25)가 시그모이드의 민감 구간
@@ -56,7 +69,10 @@ interface Node {
   readonly state: GameState
   /** 이 노드에서 둘 차례의 플레이어 — max-n: 선택 시 이 관점을 최대화한다 */
   readonly player: number
-  /** 전개 후보 (L1 프루닝 적용, TOP_K 초과 시 선별 점수 내림차순) — 터미널이면 빈 배열 */
+  /**
+   * 전개 후보 (L1 프루닝 적용) — 터미널이면 빈 배열.
+   * 루트는 항상, 내부 노드는 TOP_K 초과 시 선별 점수 내림차순 (pruneActions 주석)
+   */
   readonly actions: readonly Action[]
   /** actions와 짝 — null이면 미전개. 전개 순서 = actions 순(무브 오더링) */
   readonly children: (Node | null)[]
@@ -74,8 +90,16 @@ interface Node {
  *    플레이아웃은 값싼 simple 프로파일(벤치와 동일), 루트만 full 프로파일 —
  *    반환 수는 루트 후보 중 하나뿐이라 루트 선별 품질이 수 품질의 상한인데,
  *    simple은 귀족·예약·상대를 보지 못한다. 루트는 요청당 1회라 비용이 무시된다.
+ *
+ * alwaysSort(루트 전용): 후보가 TOP_K 이하라도 항상 평가 정렬한다 — 0~저반복으로
+ * 끊겨도 bestByVisits의 앞 인덱스 퇴화가 "루트 1-ply 최선수"가 되게(anytime 바닥).
+ * 내부 노드/플레이아웃 핫패스는 벤치 구성 그대로 TOP_K 초과일 때만 평가한다.
  */
-function pruneActions(state: GameState, profile: EvalProfile): readonly Action[] {
+function pruneActions(
+  state: GameState,
+  profile: EvalProfile,
+  alwaysSort = false,
+): readonly Action[] {
   let actions = legalActions(state)
 
   const takeDiff = actions.filter((a) => a.type === 'TAKE_DIFFERENT')
@@ -89,7 +113,7 @@ function pruneActions(state: GameState, profile: EvalProfile): readonly Action[]
     actions = [...rest, ...sorted.slice(0, Math.ceil(sorted.length / 2))]
   }
 
-  if (actions.length > TOP_K) {
+  if (alwaysSort || actions.length > TOP_K) {
     const me = state.currentPlayer
     const scored = actions.map((action) => ({
       action,
@@ -101,8 +125,13 @@ function pruneActions(state: GameState, profile: EvalProfile): readonly Action[]
   return actions
 }
 
-function makeNode(state: GameState, playerCount: number, profile: EvalProfile): Node {
-  const actions = state.phase.kind === 'gameOver' ? [] : pruneActions(state, profile)
+function makeNode(
+  state: GameState,
+  playerCount: number,
+  profile: EvalProfile,
+  alwaysSort = false,
+): Node {
+  const actions = state.phase.kind === 'gameOver' ? [] : pruneActions(state, profile, alwaysSort)
   return {
     state,
     player: state.currentPlayer,
@@ -113,7 +142,7 @@ function makeNode(state: GameState, playerCount: number, profile: EvalProfile): 
   }
 }
 
-/** 전부 전개된 자식 중 UCB 최대 인덱스 — 동률은 앞 인덱스(선별 점수 상위, 결정론) */
+/** 전부 전개된 자식 중 UCB 최대 인덱스 — 동률은 앞 인덱스(결정론) */
 function selectChild(node: Node): number {
   const logN = Math.log(node.visits)
   let bestIdx = 0
@@ -213,20 +242,21 @@ export function mctsChoose(
   if (guard) return [guard, rng2, 0]
 
   const playerCount = view.players.length
-  const root = makeNode(rootState, playerCount, 'full') // 루트만 full 선별 (pruneActions 주석)
+  // 루트만 full 선별 + 항상 정렬 (pruneActions 주석 — 수 품질 상한과 anytime 바닥)
+  const root = makeNode(rootState, playerCount, 'full', true)
   if (root.actions.length === 1) return [root.actions[0]!, rng2, 0]
 
   const deadline = performance.now() + budgetMs
   const maxIters = opts.maxIters ?? Number.POSITIVE_INFINITY
   let iters = 0
   while (iters < maxIters) {
-    if ((iters & 127) === 0 && performance.now() >= deadline) break
+    if ((iters & TIME_CHECK_MASK) === 0 && performance.now() >= deadline) break
     runIteration(root, playerCount)
     iters++
   }
 
   // anytime: 최다 방문 자식(§4.1 bestByVisits). 동률·0 iteration이면 앞 인덱스 —
-  // 루트 후보가 9개 이상일 때는 선별 점수 내림차순이라 "루트 1-ply 최선수"로 퇴화한다.
+  // 루트 후보는 항상 선별 점수 내림차순이라 "루트 1-ply 최선수"로 퇴화한다.
   let bestIdx = 0
   let bestVisits = root.children[0]?.visits ?? 0
   for (let i = 1; i < root.children.length; i++) {

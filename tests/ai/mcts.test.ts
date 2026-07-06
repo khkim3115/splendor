@@ -3,8 +3,8 @@
 //
 // 결정론 어서션은 벽시계 대신 maxIters(테스트 전용 옵션)로 고정한다 — 벽시계 기반은
 // 같은 입력이라도 머신 속도에 따라 iteration 수가 달라질 수 있기 때문.
-// 예산 어서션 완충: 시간 체크가 128회 간격(§4.1)이라 마지막 배치만큼 오버런이
-// 가능하다(로컬 실측 ~0.4s) — CI 변동까지 고려해 여유를 둔다 (flaky 방지).
+// 예산 어서션 완충: 시간 체크가 32회 간격(mcts.ts TIME_CHECK_MASK)이라 마지막 배치만큼
+// 오버런이 가능하다(단독 실행 ~83ms) — CI 변동까지 고려해 여유를 둔다 (flaky 방지).
 
 import { describe, expect, it } from 'vitest'
 import { canonicalPayment } from '../../src/engine/payment'
@@ -81,11 +81,12 @@ describe('mctsChoose (docs/AI_DESIGN.md §4)', () => {
     const elapsed = performance.now() - started
     expect(isLegal(s, action)).toBe(true)
     expect(iters).toBeGreaterThan(0)
-    // 완충 1500ms: 오버런 상한은 마지막 128회 배치 1개(단독 실행 ~0.4s, 벤치 347~402
-    // sim/s 기준)인데 배치 시간은 CPU 부하에 비례한다 — 풀 스위트 병렬 실행에서
-    // ~0.8s까지 관측됐다. 이 어서션의 목적은 정밀 상한이 아니라 "예산 근방 종료"
-    // (폭주·예산 무시 회귀 검출)이므로 flaky하지 않게 여유를 둔다.
-    expect(elapsed).toBeLessThan(2500)
+    // 상한 1500ms = client.ts 하드 타임아웃 — "구현이 폴백(쉬움 1-ply 강등)을 위협하지
+    // 않는다"를 그대로 어서션한다. 오버런 상한은 마지막 32회 배치 1개: 단독 실행
+    // ~83ms(실측 ~2.6ms/iter), 풀 스위트 병렬 부하에서도 ~210ms 수준(부하 시 단가
+    // ~6.5ms/iter 관측)이라 1000+210 ≈ 1210ms — 1500까지 ~290ms 여유로 flaky하지 않다.
+    // (128 간격 시절에는 부하 배치가 ~0.8s라 이 어서션이 불가능해 2500ms로 완화했었다.)
+    expect(elapsed).toBeLessThan(1500)
   })
 
   it('결정론: 같은 view/seed/maxIters면 같은 수와 같은 RNG 상태를 반환한다', () => {

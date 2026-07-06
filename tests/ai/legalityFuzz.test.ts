@@ -58,8 +58,8 @@ describe('AI legality fuzz', () => {
   })
 
   it('어려움(MCTS): 수십 국면(전 phase)에서 항상 합법 수를 반환한다', { timeout: 120_000 }, () => {
-    // 시간 체크가 128회 간격이라 짧은 예산만으로는 한 배치(~0.4s)를 다 돌 수 있다 —
-    // 테스트 시간 폭발 방지를 위해 짧은 예산 + maxIters(테스트 전용 옵션)로 상한을 건다.
+    // 시간 체크가 32회 간격(mcts.ts TIME_CHECK_MASK)이라 짧은 예산만으로는 한 배치
+    // (~83ms)를 다 돌 수 있다 — 짧은 예산 + maxIters(테스트 전용 옵션)로 상한을 건다.
     const states = sampleStates(6, 16)
     let rng: RngState = createRng(4)
     let checked = 0
