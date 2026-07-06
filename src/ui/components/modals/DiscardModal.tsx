@@ -8,6 +8,7 @@ import {
   type TokenMap,
 } from '../../../engine'
 import { useGameStore } from '../../../store/gameStore'
+import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { COLOR_KO } from '../../i18n/ko'
 import { GemIcon } from '../common/GemIcon'
 
@@ -15,6 +16,8 @@ import { GemIcon } from '../common/GemIcon'
 export function DiscardModal({ view }: { view: GameState }) {
   const dispatch = useGameStore((s) => s.dispatch)
   const [sel, setSel] = useState<TokenMap>(ZERO_TOKENS)
+  // 거부 불가 모달 — Esc 무시(onEscape 없음), 포커스만 순회시킨다
+  const trapRef = useFocusTrap<HTMLDivElement>()
   if (view.phase.kind !== 'discard') return null
 
   const mustDiscard = view.phase.mustDiscard
@@ -23,7 +26,7 @@ export function DiscardModal({ view }: { view: GameState }) {
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="토큰 반납">
-      <div className="modal">
+      <div className="modal" ref={trapRef}>
         <h2>토큰 반납 (§5)</h2>
         <p>
           토큰이 10개를 넘었습니다. <b>{mustDiscard}개</b>를 골라 반납하세요.

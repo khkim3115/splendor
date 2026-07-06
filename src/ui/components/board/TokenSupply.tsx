@@ -29,7 +29,7 @@ export function TokenSupply({ view }: { view: GameState }) {
           </button>
         )
       })}
-      <div className="token-pile token-gold-pile" aria-label={`황금 토큰 ${view.supply.gold}개 (예약으로만 획득)`}>
+      <div className="token-pile token-gold token-gold-pile" aria-label={`황금 토큰 ${view.supply.gold}개 (예약으로만 획득)`}>
         <GemIcon color="gold" size={26} />
         <span className="token-count">{view.supply.gold}</span>
       </div>

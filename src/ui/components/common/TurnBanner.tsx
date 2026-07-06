@@ -1,4 +1,5 @@
 import type { GameState } from '../../../engine'
+import { AiThinkingBadge } from './AiThinkingIndicator'
 
 export function TurnBanner({
   view,
@@ -16,11 +17,7 @@ export function TurnBanner({
   return (
     <div className="turn-banner">
       <span className="turn-name">{name}님의 차례</span>
-      {kind?.type === 'ai' && (
-        <span className="ai-badge" aria-live="polite">
-          🤖 {aiThinking ? '생각 중…' : 'AI'}
-        </span>
-      )}
+      {kind?.type === 'ai' && <AiThinkingBadge thinking={aiThinking} />}
       {view.finalRound && <span className="final-round-badge">마지막 라운드!</span>}
       {canUndo && (
         <button type="button" className="btn btn-undo" onClick={onUndo}>
