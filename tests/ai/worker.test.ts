@@ -28,7 +28,9 @@ function ask(state: GameState, me: number, difficulty: AiRequest['difficulty']):
     stateJson: JSON.stringify(playerView(state, me)),
     me,
     difficulty,
-    budgetMs: 15,
+    // 콜드 CI 러너에서 anytime MCTS가 첫 반복도 못 끝내 iters:0이 되는 flaky를 막을
+    // 만큼 넉넉히. greedy(easy/normal)·hard discard 즉답은 예산과 무관해 영향 없다.
+    budgetMs: 200,
     aiSeed: 1,
   }
   const handler = self.onmessage!
