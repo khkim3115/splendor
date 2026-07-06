@@ -73,7 +73,7 @@ export function mctsChoose(view: GameState, me: number, budgetMs: number, rng: R
   const deadline = now() + budgetMs;
   let iters = 0;
   while (true) {
-    if ((iters & 127) === 0 && now() >= deadline) break;   // 시간 체크는 128회마다 (설계안 2)
+    if ((iters & 15) === 0 && now() >= deadline) break;   // 시간 체크는 16회마다 (M6 실측 조정: 원안 128은 sim 단가 ~1ms에서 예산 대비 2~5배 오버슈트 — now() 단가가 무시 가능해 하향)
     let s = root, node = tree.root;
     // ② 선택/확장: 트리 하강은 applyResolved(§4.3) — play 액션만 엣지가 된다
     // ③ 플레이아웃: 그리디 정책(evaluate full의 1-ply)으로 깊이 10 truncate
@@ -129,6 +129,8 @@ export function applyResolved(s: GameState, a: Action): GameState {
 
 **중요**: L2까지는 단일 엔진 원칙이 전혀 훼손되지 않는다. "어려움은 실제로 잘 둬야 함" 요구는 L2의 3-ply 탐색만으로도 그리디 대비 확실한 우위가 성립하므로(선행 연구: 계획 길이 2~3이면 강함), L3에 도달할 확률 자체가 낮다. 이 사다리의 존재가 "미달 시 설계 원칙 붕괴"라는 단일 실패점을 제거한다.
 
+**M6 측정 기록 (2026-07, `scripts/bench.ts`, 데스크톱)**: 단가 — applyAction 1.1µs · applyResolved(phase 붕괴 포함) 33µs · legalActions 4.2µs · evaluate(full) 5.4µs. 시뮬레이션/초 — **L0(깊이 10, 프루닝 없음) 655 → 하한 미달**, **L1(깊이 6 + TAKE 프루닝) 1,215 → 수용**(목표 2,000에는 미달). **판정: L1 채택** — `ai/mcts.ts`의 `MCTS_TUNING` 기본값(playoutDepth 6, prunePlayoutTakes true)으로 고정. L2 불필요. 시간 체크 간격은 원안 128회 → 16회로 하향(§4.1 — sim 단가 ~1ms에서 128 간격은 예산 대비 2~5배 오버슈트).
+
 ---
 
 ## 5. Web Worker 통합
@@ -155,7 +157,8 @@ export type AiRequest = {
 export type AiResponse = {
   id: number;
   actionJson: string;
-  stats: { iters: number; elapsedMs: number; algo: 'greedy1' | 'greedy2' | 'mcts' | 'maxn3' };
+  stats: { elapsedMs: number; algo: 'greedy1' | 'greedy2' | 'mcts' | 'fallback'; iters?: number };
+  // iters는 mcts 전용. 'maxn3'은 §4.4 L2 채택 시에만 추가(M6 판정: L1로 충분해 미도입).
 };
 ```
 
@@ -185,6 +188,7 @@ export type AiResponse = {
 - 도구: `scripts/selfplay.ts` (Node, 브라우저 불필요 — 엔진·AI가 순수 모듈이라 그대로 구동).
 - 기준: 인접 난이도 간 상위 승률 **65~80%** (2인전 200판, 선후공 교대). 65% 미만이면 차별화 실패 → 온도/깊이/예산 조정. 80% 초과면 간극 과대 → 하위 난이도 상향.
 - **M5 측정 기록 (2026-07, 200판)**: 보통 > 쉬움 **86.4%** (T=1.8; T=1.2에서도 88.9%로 온도는 지배 변수가 아님 — 격차는 simple/full 시야 차이가 지배). 리뷰 확정 결함 수정(가드 평가 손해 검사, 반납/귀족 정책 평가 argmax 전환, 승리 임박도 구현) 후 재측정 **88.0%**. DoD(≥65%)는 통과, 밴드 상한(80%)은 소폭 초과. 쉬움을 밴드 안으로 올리려면 simple 프로파일 조정(보너스 소량 반영 등)이 필요한데 이는 "시야가 좁은 초보" 콘셉트와 상충하므로, **M6에서 어려움 추가 시 3단계 서열을 함께 재측정·재조정**하기로 결정.
+- **M6 측정 기록 (2026-07, `scripts/selfplay.ts`, 200판·선후공 교대·hard 예산 150ms·시드 9000)**: 어려움 > 보통 **70.2%** (139/198, 무승부 2, 평균 60.1턴, hard 평균 1,951 sim/수) — **밴드(65~80%) 내, DoD 통과**. 보통 > 쉬움 재측정 **89.0%** — M5와 동일 수준의 상한 초과. 쉬움 상향은 콘셉트 상충(M5 기록 참조)이므로 **조정하지 않고 유지**한다 — 3단계 서열(어려움>보통>쉬움)은 성립. 3~4인 혼합 스모크 **50/50판 정상 종료**, 난이도별 승수(공동 승리 포함) hard 26 / normal 23 / easy 1 — 다인전에서도 서열 유지.
 - 3~4인전 스모크(혼합 난이도 50판)로 다인전 붕괴 여부만 확인.
 - **CI 정책** (심사 지적 4 반영): PR 게이트 아님. `ai-arena.yml` **주 1회**, 어려움 예산 150ms로 축소 실행(절대 강도는 낮아지지만 서열 검증에는 충분). 추정 실행시간 60~70분 — Actions 한도 내. 정밀 측정(1,000ms 예산)은 로컬 실행이 기본.
 

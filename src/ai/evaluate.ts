@@ -128,3 +128,25 @@ export function evaluate(state: GameState, me: number, profile: EvalProfile): nu
   }
   return mine - WEIGHTS.opponent * bestOther
 }
+
+/**
+ * 전 플레이어 마진 벡터 — MCTS max-n 백업용 (docs/AI_DESIGN.md §4.1).
+ * 각 원소는 evaluate(state, p, 'full')과 동일 정의이되, playerValue를
+ * 플레이어당 1회만 계산한다 (플레이아웃 리프 핫패스).
+ */
+export function evaluateAllFull(state: GameState): number[] {
+  const n = state.players.length
+  if (state.phase.kind === 'gameOver') {
+    const winners = state.phase.result.winners
+    return state.players.map((_, p) => (winners.includes(p) ? WEIGHTS.win : -WEIGHTS.win))
+  }
+  const pv: number[] = []
+  for (let i = 0; i < n; i++) pv.push(playerValue(state, i, 'full'))
+  return pv.map((v, i) => {
+    let bestOther = -Infinity
+    for (let j = 0; j < n; j++) {
+      if (j !== i && pv[j]! > bestOther) bestOther = pv[j]!
+    }
+    return v - WEIGHTS.opponent * bestOther
+  })
+}

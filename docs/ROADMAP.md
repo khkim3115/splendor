@@ -112,7 +112,7 @@
 
 **작업**
 - `scripts/bench.ts` **먼저**: apply 단가·시뮬레이션/초 측정. 수용 하한(800 sim/s) 판정 → AI_DESIGN §4.4 사다리(L0은 즉시 적용, L1/L2는 필요 시)를 여기서 결정하고 결과를 커밋 메시지에 기록.
-- `ai/moveGen.ts`(determinize, compositeMoves), `ai/search.ts`(applyResolved), `ai/mcts.ts`(anytime, 128회 간격 시간 체크, max-n 백업).
+- `ai/moveGen.ts`(determinize, compositeMoves), `ai/search.ts`(applyResolved), `ai/mcts.ts`(anytime, 주기적 시간 체크 — 간격은 M6 실측으로 16회 확정(AI_DESIGN §4.4), max-n 백업).
 - `scripts/selfplay.ts` 완성: 난이도 매트릭스, 승률·평균 턴 수 리포트.
 - determinize 마스킹 보존 테스트.
 

@@ -2,7 +2,7 @@
 // M5 DoD: AI 게임이 개입 없이 정상 완주 + undo 정합 프로퍼티
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { setAiDelayScale } from '../../src/ai/client'
+import { setAiBudgetOverride, setAiDelayScale } from '../../src/ai/client'
 import { hashState, replay } from '../../src/engine/serialize'
 import { legalActions } from '../../src/engine/legal'
 import { createRng, nextInt, type RngState } from '../../src/engine/rng'
@@ -114,6 +114,32 @@ describe('AI 통합', () => {
         expect(after.eventCounts.length).toBe(after.actionLog.length)
         expect(after.eventFeed.length).toBe(after.eventCounts.reduce((a, b) => a + b, 0))
       }
+    }
+  })
+
+  it('어려움 포함 혼합 게임이 완주된다 (M6 — Worker 미지원 환경의 메인스레드 MCTS 경로)', { timeout: 120_000 }, async () => {
+    setAiBudgetOverride({ hard: 20 }) // 테스트 전용 축소 예산 — 경로 검증이 목적
+    try {
+      store().newGame({
+        players: [
+          { type: 'ai', name: 'AI 어려움', difficulty: 'hard' },
+          { type: 'ai', name: 'AI 보통', difficulty: 'normal' },
+          { type: 'ai', name: 'AI 쉬움', difficulty: 'easy' },
+        ],
+        seed: 4242,
+      })
+      await vi.waitFor(
+        () => {
+          expect(store().committed!.phase.kind).toBe('gameOver')
+        },
+        { timeout: 110_000, interval: 200 },
+      )
+      // 완주 후에도 진실원 불변식 유지 — MCTS 경로에서도 불법 수가 없었다는 뜻
+      expect(hashState(replay(store().committed!.config, store().actionLog))).toBe(
+        hashState(store().committed!),
+      )
+    } finally {
+      setAiBudgetOverride({})
     }
   })
 
