@@ -22,7 +22,8 @@ const SOFTMAX_SCALE = 25
 // 온도는 격차의 지배 변수가 아니다(시야 차이가 지배) — 문서 권고 범위(1.5~2.0)의 T=1.8 유지.
 // M6-3 재측정(같은 시드 9000+): 보통>쉬움 88.0% — 밴드(65~80%) 소폭 초과는 수용 확정.
 // simple 프로파일 상향은 "시야가 좁은 초보" 콘셉트와 상충하고, 3단계 서열이 명확해
-// (어려움>보통 69.8%, 500ms 200판) 온도·topK는 건드리지 않는다 (AI_DESIGN §6.1 M6 기록).
+// (어려움>보통 72.9%, 500ms 200판, freeze OFF 재측정) 온도·topK는 건드리지 않는다
+// (AI_DESIGN §6.1 M6 기록).
 const PARAMS: Record<Exclude<Difficulty, 'hard'>, { topK: number; temperature: number }> = {
   easy: { topK: 4, temperature: 1.8 },
   normal: { topK: 3, temperature: 0.45 },

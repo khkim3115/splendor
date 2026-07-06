@@ -23,10 +23,11 @@ beforeAll(() => setStateFreezing(false))
 afterAll(() => setStateFreezing(true))
 
 // 어려움(MCTS)의 아레나 예산 — 정밀(1,000ms) 200판은 수 시간이라 §6.1 정책대로 축소
-// 예산이 기본이다. 단 강도가 예산에 강하게 민감함이 실측됨(M6-3, 50판 사다리:
-// 150ms 58% / 400ms 68% / 1,000ms 90% — 150ms는 ~57 iteration뿐이라 MCTS가 힘을
-// 내기 전). 기본 500ms = 풀 예산의 1/2(~190 iteration)로 상향해 서열이 밴드 안에서
-// 측정되게 한다 (근거: docs/AI_DESIGN.md §6.1 M6 기록).
+// 예산이 기본이다. 단 강도가 예산에 강하게 민감함이 실측됨(M6-3, 50판 사다리, freeze
+// ON 측정: 150ms 58% / 400ms 68% / 1,000ms 90% — 150ms는 ~57 iteration뿐이라 MCTS가
+// 힘을 내기 전). 기본 500ms = 풀 예산의 1/2(~190 iteration)로 상향해 서열이 밴드
+// 안에서 측정되게 한다. 확정 측정(freeze OFF, 200판)은 어려움>보통 72.9%로 밴드 내
+// (근거: docs/AI_DESIGN.md §6.1 M6 기록).
 /** 수치 env 파싱 — 미설정·빈 문자열·비수치("abc" 등)는 NaN을 흘리지 말고 null 폴백 */
 function envNum(name: string): number | null {
   const raw = process.env[name]
