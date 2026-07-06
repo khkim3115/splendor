@@ -3,12 +3,13 @@ import type { GameConfig, PlayerKind } from '../../engine'
 import { useGameStore } from '../../store/gameStore'
 import { hasSave } from '../../store/persistence'
 
-type SeatKind = 'human' | 'easy' | 'normal'
+type SeatKind = 'human' | 'easy' | 'normal' | 'hard'
 
 const SEAT_LABEL: Record<SeatKind, string> = {
   human: '사람',
   easy: 'AI · 쉬움',
   normal: 'AI · 보통',
+  hard: 'AI · 어려움',
 }
 
 const defaultName = (kind: SeatKind, i: number): string =>
@@ -41,7 +42,7 @@ export function SetupScreen() {
       const name = names[i]?.trim() || defaultName(kind, i)
       return kind === 'human'
         ? { type: 'human', name }
-        : { type: 'ai', name, difficulty: kind === 'easy' ? 'easy' : 'normal' }
+        : { type: 'ai', name, difficulty: kind }
     })
     const seed =
       seedText.trim() !== '' && Number.isInteger(Number(seedText))
@@ -92,9 +93,7 @@ export function SetupScreen() {
               <option value="human">사람</option>
               <option value="easy">AI · 쉬움</option>
               <option value="normal">AI · 보통</option>
-              <option value="hard" disabled>
-                AI · 어려움 (M6 예정)
-              </option>
+              <option value="hard">AI · 어려움</option>
             </select>
           </div>
         ))}

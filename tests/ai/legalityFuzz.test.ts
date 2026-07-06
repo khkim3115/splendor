@@ -9,6 +9,7 @@ import { setupGame } from '../../src/engine/setup'
 import { createRng, nextInt, type RngState } from '../../src/engine/rng'
 import type { GameState } from '../../src/engine/types'
 import { chooseActionSync } from '../../src/ai/greedy'
+import { mctsChoose } from '../../src/ai/mcts'
 import { config } from '../helpers'
 
 function sampleStates(games: number, everyN: number): GameState[] {
@@ -56,6 +57,23 @@ describe('AI legality fuzz', () => {
     expect(checked).toBeGreaterThanOrEqual(60)
   })
 
+  it('어려움(MCTS): 수십 국면(전 phase)에서 항상 합법 수를 반환한다', { timeout: 120_000 }, () => {
+    // 시간 체크가 128회 간격이라 짧은 예산만으로는 한 배치(~0.4s)를 다 돌 수 있다 —
+    // 테스트 시간 폭발 방지를 위해 짧은 예산 + maxIters(테스트 전용 옵션)로 상한을 건다.
+    const states = sampleStates(6, 16)
+    let rng: RngState = createRng(4)
+    let checked = 0
+    for (const s of states) {
+      if (checked >= 40) break
+      const view = playerView(s, s.currentPlayer)
+      const [action, next] = mctsChoose(view, s.currentPlayer, 10, rng, { maxIters: 12 })
+      rng = next
+      expect(isLegal(s, action), JSON.stringify({ action, phase: s.phase.kind })).toBe(true)
+      checked++
+    }
+    expect(checked).toBeGreaterThanOrEqual(30)
+  })
+
   it('공급 고갈·예약 가득 극단 국면에서도 합법 수를 반환한다', () => {
     // 교착 직전 상태 — PASS만 합법
     let s = setupGame(config(2, 9))
@@ -77,5 +95,8 @@ describe('AI legality fuzz', () => {
       const [action] = chooseActionSync(playerView(s, 0), 0, difficulty, createRng(3))
       expect(isLegal(s, action)).toBe(true)
     }
+    // 어려움(MCTS)도 같은 극단 국면에서 합법 수(PASS만 가능)를 반환한다
+    const [action] = mctsChoose(playerView(s, 0), 0, 10, createRng(3), { maxIters: 4 })
+    expect(isLegal(s, action)).toBe(true)
   })
 })

@@ -8,6 +8,7 @@ import {
   type Difficulty,
   type GameState,
 } from '../engine'
+import { chooseAction } from './chooseAction'
 import { chooseActionSync } from './greedy'
 import type { AiRequest, AiResponse } from './protocol'
 
@@ -100,11 +101,11 @@ export class AiClient {
     const worker = this.ensureWorker()
     let move: Promise<Action>
     if (!worker) {
-      // Worker 미지원 환경(테스트 등): 메인스레드에서 동일 코드 실행
-      move = Promise.resolve().then(() => {
-        const [action] = chooseActionSync(view, me, difficulty, createRng(aiSeed))
-        return action
-      })
+      // Worker 미지원 환경(테스트 등): 메인스레드에서 동일 라우팅 실행 (§5.1)
+      // — hard도 Worker 경로와 같은 chooseAction을 타서 MCTS로 계산된다
+      move = Promise.resolve().then(
+        () => chooseAction(view, me, difficulty, budgetMs, createRng(aiSeed)).action,
+      )
     } else {
       const id = this.nextId++
       move = new Promise<Action>((resolve) => {

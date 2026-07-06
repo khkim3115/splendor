@@ -3,7 +3,7 @@
 /// <reference lib="webworker" />
 
 import { createRng, setStateFreezing, type GameState } from '../engine'
-import { chooseActionSync } from './greedy'
+import { chooseAction } from './chooseAction'
 import type { AiRequest, AiResponse } from './protocol'
 
 // L0 성능 최적화 (docs/AI_DESIGN.md §4.4): Worker 프로덕션 번들에서는 dev 전용
@@ -15,13 +15,21 @@ self.onmessage = (e: MessageEvent<AiRequest>) => {
   const req = e.data
   const started = performance.now()
   const view = JSON.parse(req.stateJson) as GameState
-  const [action] = chooseActionSync(view, req.me, req.difficulty, createRng(req.aiSeed))
+  // 난이도 라우팅은 chooseAction 단일 진입점 (§5.1) — hard면 anytime MCTS(§4)
+  const { action, algo, iters } = chooseAction(
+    view,
+    req.me,
+    req.difficulty,
+    req.budgetMs,
+    createRng(req.aiSeed),
+  )
   const response: AiResponse = {
     id: req.id,
     actionJson: JSON.stringify(action),
     stats: {
       elapsedMs: Math.round(performance.now() - started),
-      algo: req.difficulty === 'easy' ? 'greedy1' : 'greedy2',
+      algo,
+      iters,
     },
   }
   self.postMessage(response)

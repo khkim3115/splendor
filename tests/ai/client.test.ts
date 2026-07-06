@@ -44,6 +44,17 @@ describe('AiClient 폴백', () => {
     warn.mockRestore()
   })
 
+  it('Worker 미지원 환경에서 hard는 메인스레드 MCTS로 계산한다 (§5.1 코드 경로 통일)', { timeout: 15_000 }, async () => {
+    const s = setupGame(config(2, 14))
+    const client = new AiClient()
+    const started = performance.now()
+    const action = await client.requestMove(s, s.currentPlayer, 'hard', 4)
+    const elapsed = performance.now() - started
+    expect(isLegal(s, action)).toBe(true)
+    // 그리디(<30ms)가 아니라 MCTS가 예산(1000ms)만큼 실제로 탐색했다는 행동 증거
+    expect(elapsed).toBeGreaterThan(500)
+  })
+
   it('killWorker(디버그 훅) 후에도 게임이 계속된다', async () => {
     vi.stubGlobal('Worker', SilentWorker)
     const s = setupGame(config(2, 13))
