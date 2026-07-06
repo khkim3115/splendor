@@ -4,8 +4,9 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AiClient, setAiDelayScale } from '../../src/ai/client'
-import { isLegal } from '../../src/engine/legal'
+import { isLegal, legalActions } from '../../src/engine/legal'
 import { setupGame } from '../../src/engine/setup'
+import type { AiRequest, AiResponse } from '../../src/ai/protocol'
 import { config } from '../helpers'
 
 setAiDelayScale(0)
@@ -16,6 +17,24 @@ class SilentWorker {
   onerror: unknown = null
   postMessage(): void {}
   terminate(): void {}
+}
+
+/** 생성·종료·수신 메시지를 기록하는 Worker — cancelAll의 종료/프리워밍 검증용 */
+class RecordingWorker {
+  static instances: RecordingWorker[] = []
+  onmessage: ((e: { data: AiResponse }) => void) | null = null
+  onerror: unknown = null
+  posted: AiRequest[] = []
+  terminated = false
+  constructor() {
+    RecordingWorker.instances.push(this)
+  }
+  postMessage(msg: AiRequest): void {
+    this.posted.push(msg)
+  }
+  terminate(): void {
+    this.terminated = true
+  }
 }
 
 afterEach(() => {
@@ -62,5 +81,68 @@ describe('AiClient 폴백', () => {
     client.killWorker()
     const action = await client.requestMove(s, s.currentPlayer, 'normal', 3)
     expect(isLegal(s, action)).toBe(true)
+  })
+})
+
+describe('AiClient cancelAll (undo·새 게임 경로 — src/store/gameStore.ts)', () => {
+  it('진행 중 계산이 있으면 Worker를 종료하고 새 Worker를 프리워밍한다', async () => {
+    // Worker는 단일 스레드 큐 — pending만 비우면 안에서 도는 MCTS(~1.3s)는 계속 돌아
+    // 다음 hard 요청이 큐에 밀려 타임아웃(조용한 easy 강등)된다. terminate가 필수.
+    vi.stubGlobal('Worker', RecordingWorker)
+    RecordingWorker.instances = []
+    const s = setupGame(config(2, 15))
+    const client = new AiClient()
+
+    void client.requestMove(s, s.currentPlayer, 'hard', 5) // 응답 없음 = 계산 중
+    expect(RecordingWorker.instances).toHaveLength(1)
+    const w0 = RecordingWorker.instances[0]!
+    expect(w0.posted).toHaveLength(1)
+
+    client.cancelAll()
+
+    expect(w0.terminated).toBe(true) // 진행 중 계산 중단
+    expect(RecordingWorker.instances).toHaveLength(2) // 즉시 프리워밍 (콜드 스타트 제거)
+
+    // 다음 요청은 fresh Worker에서 타임아웃 없이 처리된다
+    const w1 = RecordingWorker.instances[1]!
+    expect(w1.terminated).toBe(false)
+    const next = client.requestMove(s, s.currentPlayer, 'hard', 6)
+    expect(w1.posted).toHaveLength(1)
+    const req = w1.posted[0]!
+    const reply = legalActions(s)[0]!
+    w1.onmessage?.({
+      data: {
+        id: req.id,
+        actionJson: JSON.stringify(reply),
+        stats: { elapsedMs: 1, algo: 'mcts', iters: 1 },
+      },
+    })
+    const action = await next
+    expect(action).toEqual(reply)
+    expect(isLegal(s, action)).toBe(true)
+  })
+
+  it('유휴 상태의 cancelAll은 종료 없이 프리워밍만 한다 (새 게임 시작 경로)', () => {
+    vi.stubGlobal('Worker', RecordingWorker)
+    RecordingWorker.instances = []
+    const client = new AiClient()
+
+    client.cancelAll() // newGame → cancelAll: 첫 hard 수의 Worker 콜드 스타트 제거
+    expect(RecordingWorker.instances).toHaveLength(1)
+    expect(RecordingWorker.instances[0]!.terminated).toBe(false)
+
+    client.cancelAll() // 진행 중 계산 없음 — 기존 Worker 유지 (불필요한 재생성 없음)
+    expect(RecordingWorker.instances).toHaveLength(1)
+    expect(RecordingWorker.instances[0]!.terminated).toBe(false)
+  })
+
+  it('killWorker(영구 폴백 훅) 후 cancelAll은 Worker를 되살리지 않는다', () => {
+    vi.stubGlobal('Worker', RecordingWorker)
+    RecordingWorker.instances = []
+    const client = new AiClient()
+
+    client.killWorker() // workerBroken — 그리디 폴백 경로 고정용 디버그 훅
+    client.cancelAll()
+    expect(RecordingWorker.instances).toHaveLength(0)
   })
 })

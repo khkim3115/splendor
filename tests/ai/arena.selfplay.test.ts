@@ -5,13 +5,22 @@
 //   판수 축소:   ARENA_GAMES (파일럿 용 — 기본은 이슈 명세: 쌍당 200판, 스모크 50판)
 // (CI 게이트 아님 — 로컬 검증용. 기준: 인접 난이도 상위 승률 밴드 65~80%)
 
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { applyAction } from '../../src/engine/apply'
 import { playerView } from '../../src/engine/view'
 import { setupGame } from '../../src/engine/setup'
 import { createRng, type RngState } from '../../src/engine/rng'
+import { setStateFreezing } from '../../src/engine/freeze'
 import type { Difficulty, GameConfig } from '../../src/engine/types'
 import { chooseAction } from '../../src/ai/chooseAction'
+
+// 프로덕션 동등 조건: 출하 경로(src/ai/worker.ts)와 벤치(tests/bench)는 dev 전용
+// deep-freeze 가드를 끄고 돈다 — 측정도 같은 조건이어야 한다. freeze ON은 apply
+// 단가를 30~70% 올려 어려움(anytime MCTS)의 벽시계 예산 내 유효 iteration을 깎으므로
+// 어려움이 낀 승률 측정치가 달라진다. (쉬움/보통은 고정 깊이 탐색이라 freeze가
+// 벽시계만 바꾸고 착수는 불변 — docs/AI_DESIGN.md §6.1 M6 기록.)
+beforeAll(() => setStateFreezing(false))
+afterAll(() => setStateFreezing(true))
 
 // 어려움(MCTS)의 아레나 예산 — 정밀(1,000ms) 200판은 수 시간이라 §6.1 정책대로 축소
 // 예산이 기본이다. 단 강도가 예산에 강하게 민감함이 실측됨(M6-3, 50판 사다리:
@@ -94,10 +103,12 @@ describe('자가대전 아레나', () => {
     () => {
       const games = GAMES_OVERRIDE ?? 200
       const rate = runPair('어려움>보통', 'hard', 'normal', games, 11000)
-      // ROADMAP M6 DoD 하드 게이트: 65~80% 밴드. 하한은 항상(파일럿도 신호),
-      // 상한은 명세 판수(200)에서만 — 소표본 파일럿의 우연 초과는 판정이 아니다.
+      // ROADMAP M6 DoD 하드 게이트: 65~80% 밴드. 하한은 항상(파일럿도 신호).
+      // 상한은 명세 판수(200) + 확정 예산(500ms)에서만 — §6.1: 강도가 예산에 단조
+      // 증가해(50판 사다리 150ms 58% / 1,000ms 90%) 1,000ms 정밀 구성은 설계상
+      // 밴드를 상회한다. 소표본 파일럿의 우연 초과도 판정이 아니다.
       expect(rate).toBeGreaterThanOrEqual(0.65)
-      if (games >= 200) expect(rate).toBeLessThanOrEqual(0.8)
+      if (games >= 200 && BUDGET_MS === 500) expect(rate).toBeLessThanOrEqual(0.8)
     },
   )
 

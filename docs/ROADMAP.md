@@ -116,6 +116,11 @@
 - `scripts/selfplay.ts` 완성: 난이도 매트릭스, 승률·평균 턴 수 리포트.
 - determinize 마스킹 보존 테스트.
 
+**이월·대체 기록 (M6 종료 시점)**
+- 벤치는 `scripts/bench.ts` 대신 `tests/bench/bench.test.ts` + `scripts/run-bench.mjs`(`npm run bench`)로 구현 — 측정·판정 기록은 AI_DESIGN §4.4.
+- `moveGen.compositeMoves`(토큰 스왑 패턴 루트 후보 — AI_DESIGN §4.3 한계 보완책)는 **미구현 이월**: 어려움>보통 승률 밴드 충족으로 불요 판정(이슈 그루밍에서 제외), "마일스톤 이후 (백로그)"에 기록.
+- `scripts/selfplay.ts`는 별도 스크립트 대신 `tests/ai/arena.selfplay.test.ts`(SELFPLAY=1 가드)로 **대체 구현**(이슈 #3) — 난이도 매트릭스·승률 리포트 기능 동일.
+
 **DoD**
 - [ ] 데스크톱 기준 어려움 AI가 1초 예산 내 착수하고, bench 결과가 수용 하한 이상(미달 시 L1/L2 적용 후 재측정 기록 존재).
 - [ ] 어려움 > 보통 승률 65~80% (로컬 200판, 선후공 교대). 미달 시 이 마일스톤은 닫히지 않는다.
@@ -158,7 +163,7 @@
 
 ## 마일스톤 이후 (백로그 — 착수하지 않음, 여지만 기록)
 
-- 애니메이션 고도화(FlyLayer 포털·사운드), AI 복기 패널(`stats.topCandidates`), 색약 패턴 오버레이·완전 키보드 플레이, 저사양 기기 예산 자동 보정, 하우스룰 config 플래그, 온라인 멀티(순수 엔진 + `playerView` + 액션 로그가 그대로 서버 프로토콜이 된다 — 이 설계의 확장 배당금).
+- 애니메이션 고도화(FlyLayer 포털·사운드), AI 복기 패널(`stats.topCandidates`), 색약 패턴 오버레이·완전 키보드 플레이, 저사양 기기 예산 자동 보정, 하우스룰 config 플래그, 온라인 멀티(순수 엔진 + `playerView` + 액션 로그가 그대로 서버 프로토콜이 된다 — 이 설계의 확장 배당금), `moveGen.compositeMoves`(토큰 스왑 전술 루트 후보 — AI_DESIGN §4.3 한계 보완, M6에서 승률 밴드 충족으로 이월).
 
 ## 운영 규약 (전 마일스톤 공통)
 

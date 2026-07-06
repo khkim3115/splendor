@@ -1,6 +1,7 @@
 // 난이도 라우팅 단일 진입점 (docs/AI_DESIGN.md §5.1 — "코드 경로 1개").
 // Worker 엔트리와 클라이언트의 Worker 미지원 폴백이 같은 코드를 쓴다 —
-// hard가 chooseActionSync로 새면 PARAMS 조회가 normal로 퇴화하는 사고를 막는다.
+// hard가 chooseActionSync로 새면 PARAMS 조회가 normal로 퇴화하는 사고를 막는다
+// (chooseActionSync가 Exclude<Difficulty, 'hard'>만 받아 타입 수준에서도 차단).
 
 import type { Action, Difficulty, GameState, RngState } from '../engine'
 import { chooseActionSync } from './greedy'

@@ -36,9 +36,9 @@ splendor/
 │  ├─ deploy.yml                   # main 머지 시 gh-pages 배포
 │  └─ ai-arena.yml                 # 주 1회: 자가대전 매트릭스 (축소 예산, 비차단)
 ├─ scripts/
-│  ├─ selfplay.ts                  # Node: 난이도 매트릭스 자가대전
-│  ├─ bench.ts                     # apply/clone/MCTS 반복수 벤치마크
+│  ├─ run-bench.mjs                # 벤치 러너(npm run bench) — 측정 본체는 tests/bench/bench.test.ts
 │  └─ gen-rules-mapping.ts         # 테스트 타이틀 §태그 → docs/rules-mapping.md 자동 생성
+│                                  # (난이도 매트릭스 자가대전은 tests/ai/arena.selfplay.test.ts — SELFPLAY=1 가드)
 ├─ src/
 │  ├─ engine/                      # ★ 순수 엔진. react/dom/store import 금지 (ESLint 강제)
 │  │  ├─ types.ts                  # 상태/액션/이벤트 전 타입
@@ -407,7 +407,7 @@ export interface SaveFileV1 {
 5. **AI 테스트**: 하드가드(즉승 수 항상 선택) / determinize가 마스킹 외 정보를 변경하지 않음 / **policy-consistency**: `discardPolicy`·`noblePolicy` 출력이 `legalActions` 원소이고, 탐색 내 autoResolve와 실전 phase 응답이 동일 함수임을 검증(설계안 2 채택) / legality fuzz: 난이도×극단 상태 수천 국면에서 항상 합법 수 반환.
 6. **UI 테스트 최소화** (Testing Library 스모크 8~10개): 반납 모달 확정 조건, 귀족 모달 강제, 토큰 불법 조합 거절 등. 룰이 UI에 없으므로 UI 테스트가 룰을 짊어지지 않는다.
 7. **커버리지 게이트** [결함 4 해결]: M1~M3 동안은 게이트 없음(속도 우선). **M3 완료 후부터** `engine/` 한정 라인 95% / 브랜치 90%를 PR 게이트로. `docs/rules-mapping.md`는 `scripts/gen-rules-mapping.ts`가 테스트 타이틀 §태그를 수집해 자동 생성하고 CI가 stale 여부만 검사한다 — 수동 문서 유지비 0.
-8. **arena** [결함 4 해결]: `scripts/selfplay.ts`(Node)로 로컬 실행이 기본. CI는 **주 1회**(`ai-arena.yml`), 어려움 예산 150ms 축소·인접쌍 200판 — 총 60~70분 추정, 비차단.
+8. **arena** [결함 4 해결]: `tests/ai/arena.selfplay.test.ts`(SELFPLAY=1 가드, Node)로 로컬 실행이 기본 — 별도 `scripts/selfplay.ts` 대신 아레나 테스트로 구현(이슈 #3). CI는 **주 1회**(`ai-arena.yml`), 어려움 예산 500ms 축소·인접쌍 200판, 비차단. (당초 150ms 계획은 M6 실측으로 폐기 — 150ms에서는 어려움>보통 58%로 서열 검증이 안 된다. AI_DESIGN §6.1 M6 기록.)
 
 ---
 

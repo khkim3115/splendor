@@ -1,5 +1,7 @@
-// 메인스레드 프록시 (docs/AI_DESIGN.md §5) — 요청 id 매칭, 하드 타임아웃,
-// Worker 크래시/미지원 시 동일 코드의 그리디 폴백. 게임이 어떤 상황에서도 멈추지 않는다.
+// 메인스레드 프록시 (docs/AI_DESIGN.md §5) — 요청 id 매칭, 하드 타임아웃.
+// 정상 경로는 Worker의 chooseAction 라우팅(easy/normal 그리디, hard MCTS — §5.1).
+// Worker 크래시/타임아웃 시 그리디 1-ply 폴백, 미지원 환경(테스트 등)은 메인스레드에서
+// 같은 chooseAction을 실행. 게임이 어떤 상황에서도 멈추지 않는다.
 
 import {
   createRng,
@@ -43,9 +45,22 @@ export class AiClient {
     this.workerBroken = true
   }
 
+  /**
+   * undo·새 게임 경로(src/store/gameStore.ts) — pending을 비우는 것만으로는 부족하다:
+   * Worker는 단일 스레드 큐라 안에서 도는 MCTS(~1.3s)는 계속 돌고, 다음 hard 요청이
+   * 큐에 밀려 하드 타임아웃(조용한 easy 강등)이 난다. 진행 중 계산이 있으면 Worker를
+   * 종료하고, 즉시 프리워밍해 다음 요청의 콜드 스타트(모듈 로드)도 제거한다.
+   * workerBroken은 건드리지 않는다 — 그건 killWorker(영구 폴백 디버그 훅) 전용.
+   */
   cancelAll(): void {
     for (const p of this.pending.values()) clearTimeout(p.timer)
+    const hadInFlight = this.pending.size > 0
     this.pending.clear()
+    if (hadInFlight && this.worker) {
+      this.worker.terminate()
+      this.worker = null
+    }
+    this.ensureWorker() // 프리워밍 — workerBroken/Worker 미지원이면 no-op
   }
 
   private ensureWorker(): Worker | null {

@@ -12,7 +12,8 @@ import { chooseActionSync } from '../../src/ai/greedy'
 import { applyResolved } from '../../src/ai/search'
 import { baseState, findCard, gems, patchPlayer, placeOnBoard, tokens } from '../helpers'
 
-const DIFFICULTIES: readonly Difficulty[] = ['easy', 'normal']
+// chooseActionSync는 타입 수준에서 hard를 받지 않는다 (hard 라우팅은 chooseAction 전용)
+const DIFFICULTIES: readonly Exclude<Difficulty, 'hard'>[] = ['easy', 'normal']
 
 describe('하드가드', () => {
   it('즉시 15점 이상을 확정하는 구매는 전 난이도가 무조건 선택한다', () => {

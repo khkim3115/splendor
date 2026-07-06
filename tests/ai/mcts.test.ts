@@ -3,8 +3,9 @@
 //
 // 결정론 어서션은 벽시계 대신 maxIters(테스트 전용 옵션)로 고정한다 — 벽시계 기반은
 // 같은 입력이라도 머신 속도에 따라 iteration 수가 달라질 수 있기 때문.
-// 예산 어서션 완충: 시간 체크가 32회 간격(mcts.ts TIME_CHECK_MASK)이라 마지막 배치만큼
-// 오버런이 가능하다(단독 실행 ~83ms) — CI 변동까지 고려해 여유를 둔다 (flaky 방지).
+// 예산 어서션: 시간 체크가 32회 간격(mcts.ts TIME_CHECK_MASK)이라 오버런은 마지막
+// 배치 1개로 유계 — 절대 벽시계 상한 대신 그 러닝의 실측 단가로 상한을 계산하는
+// 상대 어서션을 쓴다(커버리지 계측·CI 부하에 단가가 부풀어도 flaky하지 않다).
 
 import { describe, expect, it } from 'vitest'
 import { canonicalPayment } from '../../src/engine/payment'
@@ -73,20 +74,32 @@ describe('mctsChoose (docs/AI_DESIGN.md §4)', () => {
     expect(isElementOfLegal(view, action)).toBe(true)
   })
 
-  it('예산 준수: 1000ms 예산이 완충 내로 반환되고 반복이 실제로 돈다', { timeout: 10_000 }, () => {
+  it('예산 준수: 1000ms 예산의 오버런이 시간 체크 배치 규모로 유계이고 반복이 실제로 돈다', { timeout: 10_000 }, () => {
     const s = setupGame(config(4, 3))
     const view = playerView(s, s.currentPlayer)
     const started = performance.now()
     const [action, , iters] = mctsChoose(view, s.currentPlayer, 1000, createRng(1))
     const elapsed = performance.now() - started
+    console.log(
+      `[mcts] 예산 준수 실측: elapsed ${elapsed.toFixed(0)}ms, iters ${iters}, 단가 ${(elapsed / iters).toFixed(2)}ms/iter`,
+    )
     expect(isLegal(s, action)).toBe(true)
     expect(iters).toBeGreaterThan(0)
-    // 상한 1500ms = client.ts 하드 타임아웃 — "구현이 폴백(쉬움 1-ply 강등)을 위협하지
-    // 않는다"를 그대로 어서션한다. 오버런 상한은 마지막 32회 배치 1개: 단독 실행
-    // ~83ms(실측 ~2.6ms/iter), 풀 스위트 병렬 부하에서도 ~210ms 수준(부하 시 단가
-    // ~6.5ms/iter 관측)이라 1000+210 ≈ 1210ms — 1500까지 ~290ms 여유로 flaky하지 않다.
-    // (128 간격 시절에는 부하 배치가 ~0.8s라 이 어서션이 불가능해 2500ms로 완화했었다.)
-    expect(elapsed).toBeLessThan(1500)
+    // 예산 준수의 본질: 오버런은 "마지막 시간 체크 배치(TIME_CHECK_MASK+1 = 32회)
+    // 1개"로 유계다. 구 어서션(벽시계 절대 상한 1500ms)은 CI 게이트의 커버리지 계측·
+    // 러너 병렬 부하로 단가가 부풀면 구현과 무관하게 깨질 수 있었다 — 커버리지+풀
+    // 스위트 실측(2026-07-06 로컬): elapsed 1323ms, 단가 13.8ms/iter로 여유가 177ms
+    // 까지 줄었다(더 느린 CI 러너에서는 초과 가능). 그래서 이 러닝의 실측 단가로
+    // 상한을 계산하는 상대 어서션으로 재구성 — 환경이 느려지면 상한도 함께 스케일
+    // 되어 flaky하지 않다. 250ms + 계수 4는 마지막 배치의 단가 분산·GC 완충.
+    const overrun = elapsed - 1000
+    const perIter = elapsed / iters
+    expect(overrun).toBeLessThan(250 + 32 * perIter * 4)
+    // 프로덕션 보증(하드 타임아웃 1500ms 미위협)은 위 메커니즘 × 프로덕션 단가에서
+    // 산출된다: 오버런 ≤ 32 × ~2.6ms ≈ 83ms ≪ 타임아웃 마진 500ms (단가는 bench
+    // 실측 — docs/AI_DESIGN.md §4.4, freeze OFF인 출하 Worker는 이보다 싸다).
+    // 아래 절대 상한은 "예산 메커니즘 자체의 고장"(예산의 수 배 초과) 검출용 새니티.
+    expect(elapsed).toBeLessThan(2500)
   })
 
   it('결정론: 같은 view/seed/maxIters면 같은 수와 같은 RNG 상태를 반환한다', () => {

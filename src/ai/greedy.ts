@@ -78,11 +78,13 @@ function afterOpponentReply(state: GameState, me: number): GameState {
  * 쉬움/보통의 착수 선택 — Worker와 메인스레드 폴백이 같은 코드를 쓴다.
  * discard/chooseNoble phase는 정책 즉답 (policy-consistency 계약).
  * 보통은 탐색 전 determinize 1회 (마스킹 열화 방지, AI_DESIGN §3).
+ * 난이도 타입에서 'hard'를 제외해 "hard가 여기로 새면 조용히 normal로 퇴화"하는
+ * 사고를 타입 수준에서 차단한다 — hard 라우팅은 chooseAction(§5.1)이 유일한 입구.
  */
 export function chooseActionSync(
   view: GameState,
   me: number,
-  difficulty: Difficulty,
+  difficulty: Exclude<Difficulty, 'hard'>,
   rng: RngState,
 ): [Action, RngState] {
   if (view.phase.kind === 'discard') return [discardPolicy(view, me), rng]
@@ -109,6 +111,6 @@ export function chooseActionSync(
     return { action, score }
   })
 
-  const { topK, temperature } = PARAMS[difficulty === 'easy' ? 'easy' : 'normal']
+  const { topK, temperature } = PARAMS[difficulty]
   return softmaxPick(r, scored, topK, temperature)
 }
