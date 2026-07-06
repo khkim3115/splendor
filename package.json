@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "bench": "node scripts/run-bench.mjs"
   },
   "dependencies": {
     "react": "^19.2.7",
