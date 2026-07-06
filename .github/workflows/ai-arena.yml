@@ -1,0 +1,78 @@
+name: AI Arena (주간 자가대전)
+
+# 주 1회 자가대전으로 난이도 서열(어려움>보통>쉬움)을 상시 감시한다
+# (docs/AI_DESIGN.md §6.1, docs/ROADMAP.md M8). 병합 게이트 아님 — 비차단.
+# 축소 예산(hard 150ms)·인접쌍 200판. 결과는 아티팩트로 업로드.
+on:
+  schedule:
+    - cron: '0 18 * * 1' # 매주 월요일 18:00 UTC
+  workflow_dispatch:
+    inputs:
+      games:
+        description: '인접쌍당 판 수'
+        default: '200'
+      hardBudget:
+        description: 'hard 예산(ms)'
+        default: '150'
+
+permissions:
+  contents: read
+
+jobs:
+  arena:
+    runs-on: ubuntu-latest
+    # 추정 25~35분(150ms×~60수×200판×인접쌍 2 + 스모크). Actions 6h 한도 내 넉넉한 상한.
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 'lts/*'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: 자가대전 매트릭스 실행
+        env:
+          GAMES: ${{ github.event.inputs.games || '200' }}
+          HARD_BUDGET: ${{ github.event.inputs.hardBudget || '150' }}
+        run: |
+          set -euo pipefail
+          mkdir -p arena-report
+
+          run_pair () {
+            local name="$1"; shift
+            echo "::group::selfplay $name"
+            npm run --silent selfplay -- "$@" | tee "arena-report/${name}.txt"
+            echo "::endgroup::"
+          }
+
+          run_pair hard-vs-normal --pair hard:normal --games "$GAMES" --hard-budget "$HARD_BUDGET"
+          run_pair normal-vs-easy --pair normal:easy --games "$GAMES"
+          run_pair smoke          --smoke 50 --hard-budget "$HARD_BUDGET"
+
+          # 서열 근거를 summary.md 하나로 요약 (DoD: 서열이 리포트로 확인됨)
+          {
+            echo "# AI Arena 리포트 — $(date -u '+%Y-%m-%d %H:%M UTC')"
+            echo ""
+            echo "- games=${GAMES}, hard-budget=${HARD_BUDGET}ms, 선후공 교대"
+            echo ""
+            echo "## 서열 요약 (어려움 > 보통 > 쉬움)"
+            echo '```'
+            grep -hE '^\[결과\]|^판정:' arena-report/hard-vs-normal.txt arena-report/normal-vs-easy.txt || true
+            grep -hE '난이도별 승수' arena-report/smoke.txt || true
+            echo '```'
+          } | tee arena-report/summary.md
+
+          # GitHub Actions 요약 탭에도 노출
+          cat arena-report/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 리포트 아티팩트 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arena-report
+          path: arena-report/
+          retention-days: 90
