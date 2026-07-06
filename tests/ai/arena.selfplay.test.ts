@@ -1,7 +1,7 @@
 // 자가대전 아레나 (docs/AI_DESIGN.md §6.1 — M6-3 3단계 난이도 매트릭스)
 // 실행: SELFPLAY=1 npx vitest run tests/ai/arena.selfplay.test.ts --reporter=verbose
 //   특정 쌍만:   ... -t "어려움 > 보통"
-//   어려움 예산: ARENA_BUDGET_MS (기본 150ms — §6.1 축소 예산 정책. 정밀 측정은 1000)
+//   어려움 예산: ARENA_BUDGET_MS (기본 500ms — §6.1 M6 기록의 확정 예산. 정밀 측정은 1000)
 //   판수 축소:   ARENA_GAMES (파일럿 용 — 기본은 이슈 명세: 쌍당 200판, 스모크 50판)
 // (CI 게이트 아님 — 로컬 검증용. 기준: 인접 난이도 상위 승률 밴드 65~80%)
 
@@ -18,8 +18,16 @@ import { chooseAction } from '../../src/ai/chooseAction'
 // 150ms 58% / 400ms 68% / 1,000ms 90% — 150ms는 ~57 iteration뿐이라 MCTS가 힘을
 // 내기 전). 기본 500ms = 풀 예산의 1/2(~190 iteration)로 상향해 서열이 밴드 안에서
 // 측정되게 한다 (근거: docs/AI_DESIGN.md §6.1 M6 기록).
-const BUDGET_MS = Number(process.env.ARENA_BUDGET_MS ?? '500')
-const GAMES_OVERRIDE = process.env.ARENA_GAMES ? Number(process.env.ARENA_GAMES) : null
+/** 수치 env 파싱 — 미설정·빈 문자열·비수치("abc" 등)는 NaN을 흘리지 말고 null 폴백 */
+function envNum(name: string): number | null {
+  const raw = process.env[name]
+  if (!raw) return null
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : null
+}
+
+const BUDGET_MS = envNum('ARENA_BUDGET_MS') ?? 500
+const GAMES_OVERRIDE = envNum('ARENA_GAMES')
 
 function playMatch(seed: number, seats: readonly Difficulty[]): readonly number[] {
   const config: GameConfig = {
