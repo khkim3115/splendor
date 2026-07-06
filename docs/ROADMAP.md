@@ -57,7 +57,7 @@
 - `engine/helpers.ts`: `paymentBounds`/`excessTokens`/`canReserve`/`eligibleNobles`.
 - `tests/properties/invariants.test.ts`: 보존 법칙·파생값 일치·**전 phase 완전성 불변식**·불변성·결정론·종결성(랜덤 1,000판 완주)·토큰≤10·예약≤3.
 - 골든 리플레이 인프라(`tests/replays/`) + 랜덤 자가대전에서 첫 리플레이 5개 채집.
-- `scripts/gen-rules-mapping.ts`: 테스트 타이틀 §태그 → `docs/rules-mapping.md` 자동 생성, CI stale 검사 추가.
+- `scripts/gen-rules-mapping.mjs`: 테스트 타이틀 §태그 → `docs/rules-mapping.md` 자동 생성, CI stale 검사 추가.
 - **이 시점부터** CI에 `engine/` 커버리지 게이트(라인 95%/브랜치 90%) 활성화.
 
 **DoD**

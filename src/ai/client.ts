@@ -24,6 +24,38 @@ export function setAiDelayScale(scale: number): void {
   delayScale = scale
 }
 
+/**
+ * 배포/스모크 검증용 경량 진단 (프로덕션 포함, docs/ROADMAP.md M8 DoD).
+ * base '/splendor/' 경로에서 Worker가 실제로 로드됐는지를 런타임에서 관측한다.
+ * `lastAlgo === 'fallback'` 또는 `fallbacks > 0`이면 Worker 로드 실패 → 그리디 폴백(§5.3).
+ * 정상 로드 시 hard는 'mcts', 쉬움/보통은 'greedy1'/'greedy2'가 찍힌다.
+ * gameplay·보안에 영향 없는 관측/검증 전용 표면이다.
+ */
+export interface AiDiagnostics {
+  workerCreated: boolean
+  lastAlgo: 'greedy1' | 'greedy2' | 'mcts' | 'fallback' | null
+  responses: number // Worker에서 정상 수신한 응답 수
+  fallbacks: number // 폴백 경로로 해소된 수
+  setDelayScale: (scale: number) => void // 검증/스모크에서 체감 지연 제거
+}
+
+const diag: AiDiagnostics = {
+  workerCreated: false,
+  lastAlgo: null,
+  responses: 0,
+  fallbacks: 0,
+  setDelayScale: setAiDelayScale,
+}
+
+if (typeof window !== 'undefined') {
+  ;(window as unknown as { __splendorAi?: AiDiagnostics }).__splendorAi = diag
+}
+
+/** 검증에서 진단을 읽는다 (window가 없는 환경 대비) */
+export function aiDiagnostics(): AiDiagnostics {
+  return diag
+}
+
 /** 테스트 전용: 난이도별 예산 재정의 (Worker 미지원 환경의 hard 완주 테스트 등) */
 let budgetOverride: Partial<Record<Difficulty, number>> = {}
 export function setAiBudgetOverride(override: Partial<Record<Difficulty, number>>): void {
@@ -61,11 +93,14 @@ export class AiClient {
     if (this.worker) return this.worker
     try {
       this.worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' })
+      diag.workerCreated = true
       this.worker.onmessage = (e: MessageEvent<AiResponse>) => {
         const p = this.pending.get(e.data.id)
         if (!p) return // 늦게 도착한 응답(undo 후 등)은 폐기
         this.pending.delete(e.data.id)
         clearTimeout(p.timer)
+        diag.lastAlgo = e.data.stats.algo
+        diag.responses++
         p.resolve(JSON.parse(e.data.actionJson) as Action)
       }
       this.worker.onerror = () => {
@@ -98,6 +133,8 @@ export class AiClient {
     const budgetMs = budgetOverride[difficulty] ?? BUDGET_MS[difficulty]
     const fallback = (): Action => {
       // 메인스레드 그리디 1-ply — <5ms, 게임이 멈추지 않는다 (§5.3)
+      diag.lastAlgo = 'fallback'
+      diag.fallbacks++
       const [action] = chooseActionSync(view, me, 'easy', createRng(aiSeed))
       return action
     }

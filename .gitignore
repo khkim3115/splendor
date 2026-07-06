@@ -28,3 +28,12 @@ Thumbs.db
 
 # Test coverage
 coverage/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# AI arena 로컬 리포트
+arena-report/

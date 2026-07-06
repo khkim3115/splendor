@@ -1,0 +1,43 @@
+name: E2E 스모크 (비차단)
+
+# 빌드 + Web Worker(base '/splendor/' 경로) + 전원 AI 자동 완주 회귀망.
+# M8 핵심 리스크(배포 경로에서 Worker 로드)를 브라우저에서 자동 감시한다.
+# 병합 게이트 아님 — 별도 워크플로라 CI(필수 체크) 성패에 영향을 주지 않는다.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 'lts/*'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # test:e2e가 프로덕션 빌드(배포와 동일 산출물) → preview 서빙 → 스모크를 수행한다
+      - name: E2E 스모크 (전원 AI 자동 완주 + Worker 로드 검증)
+        run: npm run test:e2e
+
+      - name: 실패 리포트 업로드
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

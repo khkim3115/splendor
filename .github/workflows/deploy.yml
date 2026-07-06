@@ -1,0 +1,59 @@
+name: Deploy to GitHub Pages
+
+# main 머지 → GitHub Pages 배포 (docs/ROADMAP.md M8).
+# 병합 게이트 아님 — 배포 실패가 PR을 막지 않는다.
+# vite base는 '/splendor/'(프로젝트 사이트), 산출물은 dist/.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 공식 Pages 액션 요구 권한
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포는 직렬화 — 진행 중 배포를 취소하지 않고 순차 완료시킨다
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 'lts/*'
+          cache: npm
+
+      # Pages 배포 컨텍스트 구성. 최초 1회 저장소 Settings → Pages → Source = 'GitHub Actions'를
+      # 수동 설정해야 한다 — 기본 GITHUB_TOKEN은 Pages 자동 활성화(administration:write)를 할 수
+      # 없어 enablement:true는 미활성 저장소에서 403으로 실패한다. 활성화 후 이 스텝은 정상 동작.
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (vite base '/splendor/')
+        run: npm run build
+
+      - name: Upload artifact (dist/)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
