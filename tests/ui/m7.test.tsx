@@ -164,7 +164,8 @@ describe('M7 — 접근성', () => {
     await user.click(screen.getByLabelText(/^루비 토큰/))
     await user.click(screen.getByRole('button', { name: '가져오기 확정' }))
 
-    const live = document.querySelector('[aria-live="polite"][aria-atomic="true"]')!
+    // Announcer는 유일한 visually-hidden 낭독 영역 — 배너의 보이는 라운드 라이브 영역(#14)과 구분
+    const live = document.querySelector('.visually-hidden[aria-live="polite"][aria-atomic="true"]')!
     expect(live).not.toBeNull()
     expect(live.getAttribute('role')).toBe('status')
     expect(live.textContent).toContain('획득')
