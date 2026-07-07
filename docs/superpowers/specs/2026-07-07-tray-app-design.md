@@ -20,7 +20,8 @@ Windows·macOS 지원. 완전 오프라인(백엔드 없음).
 |---|---|
 | 플랫폼 | Windows + macOS (요트다이스 `desktop/` 이식) |
 | 은밀성 방식 | 위장 아님 → 최소 존재감(극소형·무채색·모노스페이스) + 점진적 공개 |
-| 색 사용 | 완전 무채색. 보석은 색이 아니라 **글자코드**로 표기 |
+| 색 사용 | 무채색(채도 없음) — 라이트/다크 2종 팔레트. 보석은 색이 아니라 **글자코드**로 표기 |
+| 테마 | **흰/검(라이트/다크) 전환** — 요트다이스식. 트레이 메뉴 "라이트 모드" 체크박스, `settings.json`(메인 소유)·IPC 푸시·창 배경색 플립 |
 | 글자코드 언어 | **한/영 토글** (기본 한글). 렌더러 설정(localStorage), `⋮` 메뉴에서 전환 |
 | 게임 범위 | 나(사람 1) + AI 1~3명 = **2~4인**, 난이도(쉬움/보통/어려움) 선택 |
 | 화면 노출 | 평소 접힘(최소 정보) → 버튼으로 보드/상대/귀족 **펼침**(창 리사이즈) |
@@ -73,7 +74,9 @@ store/persistence.ts┘                     app:// 프로토콜·globalShortcut
 - **`src/tray/screens/TrayResult.tsx`** — 승자·최종 점수 + [새 게임].
 - **`src/tray/format.ts`** (순수 함수, jsdom 불필요) — 글자코드 맵(ko/en), 압축 카드 표기, 플레이어 요약 포매터.
 - **`src/tray/useTraySettings.ts`** — `gemCodeLang: 'ko'|'en'` + 펼침 상태. localStorage(`splendor:tray`)에 영속.
-- **`src/tray/tray.css`** — 무채색 토큰·모노스페이스·초압축 레이아웃. (배경 #14161a, 글자 #d7dbe0/#868f9b/#5b636e, 실선 #2b3138)
+- **`src/tray/tray.css`** — 무채색 토큰·모노스페이스·초압축 레이아웃. **라이트/다크 2종 팔레트**를 루트 `data-theme="light|dark"` 로 분기.
+  다크(검): 배경 #14161a, 글자 #d7dbe0/#868f9b/#5b636e, 실선 #2b3138. 라이트(흰): 배경 #f4f4f5, 글자 #1a1d22/#5b636e/#8b93a0, 실선 #d4d7dd.
+- **테마 구독**: `TrayApp` 이 `window.tray?.onTheme(cb)` 로 메인이 푸시한 테마를 받아 루트 `data-theme` 갱신(기본 다크; 브라우저 단독 실행 시 `prefers-color-scheme` 폴백).
 
 ### 화면 상태 (점진적 공개)
 
@@ -99,7 +102,8 @@ store/persistence.ts┘                     app:// 프로토콜·globalShortcut
   위치 고정(핀)·위치 기억, 투명도(30~100 클램프), 자동 실행, 자동 업데이트(win). 요트다이스 로직 거의 그대로.
   - **로드 대상**: `popup.html` → 스플랜더 `app://…/tray.html`.
   - **펼침 리사이즈**: 렌더러가 IPC로 목표 `{w,h}` 요청 → 메인이 작업영역 클램프 + 우하단 앵커 유지(요트다이스 `positionPanel` 재사용).
-- **`preload.js`** — contextBridge: `hide`, `setOpacity`/`onOpacity`, `resize(w,h)`, `onBossKey`(표시/숨김), `setGemLang`(선택 — 메뉴에서 토글 시).
+- **`preload.js`** — contextBridge `window.tray`: `hide`, `setOpacity`/`onOpacity`, `onTheme`(메인이 푸시하는 라이트/다크), `resize(w,h)`, `onBossKey`(표시/숨김).
+- **테마(흰/검)**: 요트다이스 `yd-set-theme`/`yd-theme` 이식. `settings.json.theme('light'|'dark')` 메인 소유 → 트레이 메뉴 **"라이트 모드"** 체크박스로 토글, `win.setBackgroundColor(BG[theme])`(BG.dark #14161a / BG.light #f4f4f5 = tray.css 라이트 배경)로 깜빡임 방지, `tray-theme` IPC 로 렌더러에 푸시(창 생성·`did-finish-load` 시 초기값 포함).
 - **전역 보스키**: `globalShortcut.register`(기본 예: `Ctrl+Alt+Space`) → 표시/숨김 토글. 트레이 메뉴에서 변경, 등록 충돌 시 안내. `will-quit`에서 `unregisterAll`.
 - **`app://` 커스텀 프로토콜**: `protocol.handle`로 `dist/` 서빙 → `tray.html` + **ESM AI 워커**가 `file://` 제약 없이 로드. (워커 로드 실패해도 greedy 폴백 내장 — [`client.ts`](../../../src/ai/client.ts) `workerBroken`)
 - **`desktop/package.json`** — `build`(nsis + dmg + electron-updater), `scripts/adhoc-sign.cjs`(mac ad-hoc 서명), 요트다이스 이식.
@@ -109,7 +113,7 @@ store/persistence.ts┘                     app:// 프로토콜·globalShortcut
 
 - 트레이 뷰 ↔ `useGameStore`: 웹앱과 동일. `newGame`/`dispatch`/`undo`가 자동으로 `saveGame`(localStorage) 호출.
 - AI: `maybeRunAi`가 다음 차례가 AI면 `aiClient.requestMove`로 워커에 위임. 트레이 뷰는 `aiThinking`만 구독해 "AI 생각 중" 표시.
-- 표시 설정(`gemCodeLang`·투명도): 투명도는 Electron `settings.json`(메인 소유, 요트다이스식), 글자코드 언어는 렌더러 localStorage. 창 크기(펼침)는 렌더러 계산 → 메인 리사이즈.
+- 표시 설정: **테마(흰/검)·투명도는 Electron `settings.json`(메인 소유)** → IPC로 렌더러에 푸시(요트다이스식, 창 배경색도 메인이 플립). **글자코드 언어(한/영)는 렌더러 localStorage**. 창 크기(펼침)는 렌더러 계산 → 메인 리사이즈.
 - 보스키/숨김: 메인 `globalShortcut`·`blur`·트레이 클릭 → 창 show/hide. 창은 파괴하지 않고 hide만 → 스토어 상태·워커 구독 유지.
 
 ## 에러 처리 / 견고성
@@ -140,6 +144,7 @@ store/persistence.ts┘                     app:// 프로토콜·globalShortcut
 - [ ] 설정에서 인원 2~4·난이도 선택 → vs-AI 게임 시작. `이어하기`로 저장 게임 복원.
 - [ ] 접힘 기본 뷰가 최소 정보만 표시, [보드]/[상대]/[귀족]로 펼침·접기(창 리사이즈, 우하단 앵커).
 - [ ] 완전 무채색·모노스페이스. 보석은 글자코드로, 한/영 토글 동작(기본 한글).
+- [ ] 흰/검(라이트/다크) 테마 전환 동작 — 트레이 메뉴 토글, 창 배경색·팔레트 플립, 설정 영속.
 - [ ] 투명도 30~100% 조절·복원. 전역 보스키 동작·변경 가능.
 - [ ] 엔진·AI·스토어·세이브 스키마 무변경 — 트레이 뷰는 `useGameStore`만 소비.
 - [ ] 데스크톱 빌드에서 AI 워커가 `app://`로 정상 로드(하드=mcts, 폴백 아님).
