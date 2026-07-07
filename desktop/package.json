@@ -1,0 +1,19 @@
+{
+  "name": "splendor-desktop",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Splendor 트레이 데스크톱 셸 (Electron)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "smoke": "electron test/smoke.cjs"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.0"
+  }
+}
