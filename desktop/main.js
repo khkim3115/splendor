@@ -1,5 +1,5 @@
 'use strict'
-const { app, BrowserWindow, Tray, Menu, nativeImage, protocol, net, ipcMain } = require('electron')
+const { app, BrowserWindow, Tray, Menu, nativeImage, protocol, net, ipcMain, screen } = require('electron')
 const path = require('path')
 const { pathToFileURL } = require('url')
 const { resolveAppRequest } = require('./lib/appProtocol.cjs')
@@ -7,6 +7,7 @@ const { shouldHideOnBlur } = require('./lib/windowPolicy.cjs')
 const { readSettings, writeSettings } = require('./lib/settings.cjs')
 const { clampOpacity, clampPercent } = require('./lib/opacity.cjs')
 const { bgFor, nextTheme } = require('./lib/theme.cjs')
+const { clampBounds } = require('./lib/position.cjs')
 
 // 패키지된 앱에서 dist 는 asar 밖(extraResources)에 둔다(Task 9). 개발 모드는 ../dist.
 const DIST_ROOT = app.isPackaged
@@ -49,6 +50,9 @@ let shownAt = 0
 let win = null
 let tray = null
 let settings = null // app.whenReady 이후 초기화(userData 경로 필요)
+// setBounds() 호출은 'moved' 이벤트를 유발한다 — 프로그램 자체 이동을 사용자 드래그로
+// 오인해 저장하지 않도록 setBounds 전후로 세운다(요트다이스 positionPanel/moved 이식).
+let suppressMoveSave = false
 
 function createWindow() {
   win = new BrowserWindow({
@@ -83,6 +87,14 @@ function createWindow() {
     }
   })
 
+  // 사용자 드래그로 창을 옮긴 경우에만 winPos 를 저장한다. setBounds() 로 인한
+  // 프로그램 자체 이동은 suppressMoveSave 로 걸러낸다(tray-resize·positionPanel).
+  win.on('moved', () => {
+    if (suppressMoveSave) return
+    const { x, y } = win.getBounds()
+    settings = writeSettings(app.getPath('userData'), { winPos: { x, y } })
+  })
+
   // 닫기 = 종료 아님(트레이 상주). quit 중이 아니면 hide.
   win.on('close', (e) => {
     if (!isQuitting) {
@@ -97,8 +109,45 @@ function createWindow() {
   }
 }
 
+// 창 위치를 정한다 — 저장된 winPos 가 있으면 그 디스플레이 작업영역에 클램프해 복원,
+// 없으면 커서 근처 디스플레이의 우하단(여백 8px)에 앵커(요트다이스 positionPanel 이식).
+function positionPanel() {
+  if (!win) return
+  const size = win.getBounds()
+  if (settings.winPos) {
+    const display = screen.getDisplayMatching({
+      x: settings.winPos.x,
+      y: settings.winPos.y,
+      width: size.width,
+      height: size.height,
+    })
+    const anchor = {
+      right: settings.winPos.x + size.width,
+      bottom: settings.winPos.y + size.height,
+    }
+    const b = clampBounds({ w: size.width, h: size.height }, anchor, display.workArea)
+    suppressMoveSave = true
+    win.setBounds(b)
+    suppressMoveSave = false
+    return
+  }
+  // 저장 위치 없음: 커서 근처 우하단 앵커(작업영역 우하단에서 8px 여백)
+  const point = screen.getCursorScreenPoint()
+  const display = screen.getDisplayNearestPoint(point)
+  const wa = display.workArea
+  const b = clampBounds(
+    { w: size.width, h: size.height },
+    { right: wa.x + wa.width - 8, bottom: wa.y + wa.height - 8 },
+    wa,
+  )
+  suppressMoveSave = true
+  win.setBounds(b)
+  suppressMoveSave = false
+}
+
 function showPanel() {
   if (!win) return
+  positionPanel()
   win.show()
   win.focus()
   shownAt = Date.now()
@@ -199,4 +248,17 @@ function registerIpc() {
   })
 
   ipcMain.on('tray-hide', () => hidePanel())
+
+  // 렌더러가 패널 확장/축소로 계산한 목표 {w,h} 를 보내면, 현재 창의 우하단을
+  // 앵커로 유지한 채 작업영역에 클램프해 리사이즈한다(점진적 공개).
+  ipcMain.on('tray-resize', (_e, { w, h }) => {
+    if (!win) return
+    const cur = win.getBounds()
+    const anchor = { right: cur.x + cur.width, bottom: cur.y + cur.height }
+    const display = screen.getDisplayMatching(cur)
+    const bounds = clampBounds({ w, h }, anchor, display.workArea)
+    suppressMoveSave = true
+    win.setBounds(bounds)
+    suppressMoveSave = false
+  })
 }
