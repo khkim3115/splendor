@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>보스키 변경</title>
+    <style>
+      body { margin: 0; background: #14161a; color: #d7dbe0; font: 12px monospace; padding: 12px; }
+      #cur { color: #868f9b; margin-bottom: 8px; }
+      #cap { border: 1px solid #2b3138; padding: 8px; text-align: center; user-select: none; }
+      .hint { color: #5b636e; margin-top: 8px; }
+      button { background: #2b3138; color: #d7dbe0; border: none; padding: 4px 10px; font: 12px monospace; margin-top: 8px; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <div id="cur"></div>
+    <div id="cap" tabindex="0">여기를 클릭하고 새 조합을 누르세요</div>
+    <div class="hint">예: Ctrl+Alt+Space</div>
+    <button id="save" disabled>저장</button>
+    <button id="cancel">취소</button>
+    <script>
+      // contextIsolation:true — Electron 을 직접 require 하지 않고 preload 가
+      // contextBridge 로 노출한 window.bosskey 만 사용한다(IPC 채널·payload 는 불변).
+      let accel = null
+      const cap = document.getElementById('cap')
+      const save = document.getElementById('save')
+      document.getElementById('cur').textContent =
+        '현재: ' + (new URLSearchParams(location.search).get('cur') || '')
+      cap.addEventListener('keydown', (e) => {
+        e.preventDefault()
+        if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return // 수식키 단독 무시
+        const mods = []
+        if (e.ctrlKey || e.metaKey) mods.push('CommandOrControl')
+        if (e.altKey) mods.push('Alt')
+        if (e.shiftKey) mods.push('Shift')
+        const key = e.key.length === 1 ? e.key.toUpperCase() : e.code.replace('Key', '')
+        accel = [...mods, key].join('+')
+        cap.textContent = accel
+        save.disabled = mods.length === 0
+      })
+      save.addEventListener('click', () => {
+        if (accel) window.bosskey.save(accel)
+      })
+      document.getElementById('cancel').addEventListener('click', () => window.bosskey.cancel())
+    </script>
+  </body>
+</html>

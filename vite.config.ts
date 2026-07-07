@@ -7,6 +7,14 @@ export default defineConfig({
   // GitHub Pages 프로젝트 사이트 경로 (https://<user>.github.io/splendor/)
   base: '/splendor/',
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        tray: 'tray.html',
+      },
+    },
+  },
   worker: {
     format: 'es',
   },

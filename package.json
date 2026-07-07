@@ -14,7 +14,9 @@
     "test:watch": "vitest",
     "bench": "tsx scripts/bench.ts",
     "selfplay": "tsx scripts/selfplay.ts",
-    "test:e2e": "npm run build && playwright test"
+    "test:e2e": "npm run build && playwright test",
+    "build:desktop": "tsc -b && vite build --base=./",
+    "start:desktop": "npm run build:desktop && npm --prefix desktop start"
   },
   "dependencies": {
     "react": "^19.2.7",
