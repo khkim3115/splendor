@@ -6,6 +6,7 @@ const { resolveAppRequest } = require('./lib/appProtocol.cjs')
 const { shouldHideOnBlur } = require('./lib/windowPolicy.cjs')
 const { readSettings, writeSettings } = require('./lib/settings.cjs')
 const { clampOpacity, clampPercent } = require('./lib/opacity.cjs')
+const { bgFor, nextTheme } = require('./lib/theme.cjs')
 
 // 패키지된 앱에서 dist 는 asar 밖(extraResources)에 둔다(Task 9). 개발 모드는 ../dist.
 const DIST_ROOT = app.isPackaged
@@ -59,7 +60,7 @@ function createWindow() {
     skipTaskbar: true,
     alwaysOnTop: true,
     movable: true,
-    backgroundColor: '#14161a',
+    backgroundColor: bgFor(settings.theme),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -70,6 +71,7 @@ function createWindow() {
   win.loadURL('app://splendor/tray.html')
   win.webContents.on('did-finish-load', () => {
     win.webContents.send('tray-opacity', settings.opacity)
+    win.webContents.send('tray-theme', settings.theme)
   })
   win.once('ready-to-show', () => showPanel())
 
@@ -106,20 +108,48 @@ function hidePanel() {
   if (win) win.hide()
 }
 
+// 테마 적용 — 배경색 플립(깜빡임 방지) + 렌더러 푸시(Plan 1 onTheme 이 소비).
+function applyTheme(theme) {
+  if (!win) return
+  win.setBackgroundColor(bgFor(theme))
+  win.webContents.send('tray-theme', theme)
+}
+
+function toggleTheme() {
+  const theme = nextTheme(settings.theme)
+  settings = writeSettings(app.getPath('userData'), { theme })
+  applyTheme(theme)
+  rebuildTrayMenu()
+}
+
+function buildTrayMenu() {
+  return Menu.buildFromTemplate([
+    { label: '열기', click: () => showPanel() },
+    {
+      label: '라이트 모드',
+      type: 'checkbox',
+      checked: settings.theme === 'light',
+      click: () => toggleTheme(),
+    },
+    { type: 'separator' },
+    { label: '종료', click: () => app.quit() },
+  ])
+}
+
+function rebuildTrayMenu() {
+  if (tray) tray.setContextMenu(buildTrayMenu())
+}
+
 function createTray() {
   const icon = nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png'))
   tray = new Tray(icon)
   tray.setToolTip('Splendor')
-  const menu = Menu.buildFromTemplate([
-    { label: '열기', click: () => showPanel() },
-    { type: 'separator' },
-    { label: '종료', click: () => app.quit() },
-  ])
+  rebuildTrayMenu()
   tray.on('click', () => {
     if (win && win.isVisible() && !win.isMinimized()) hidePanel()
     else showPanel()
   })
-  tray.on('right-click', () => tray.popUpContextMenu(menu))
+  tray.on('right-click', () => tray.popUpContextMenu(buildTrayMenu()))
 }
 
 app.whenReady().then(() => {
