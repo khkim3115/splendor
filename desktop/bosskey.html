@@ -18,7 +18,8 @@
     <button id="save" disabled>저장</button>
     <button id="cancel">취소</button>
     <script>
-      const { ipcRenderer } = require('electron')
+      // contextIsolation:true — Electron 을 직접 require 하지 않고 preload 가
+      // contextBridge 로 노출한 window.bosskey 만 사용한다(IPC 채널·payload 는 불변).
       let accel = null
       const cap = document.getElementById('cap')
       const save = document.getElementById('save')
@@ -37,11 +38,9 @@
         save.disabled = mods.length === 0
       })
       save.addEventListener('click', () => {
-        if (accel) ipcRenderer.send('tray-set-bosskey', accel)
+        if (accel) window.bosskey.save(accel)
       })
-      document.getElementById('cancel').addEventListener('click', () =>
-        ipcRenderer.send('tray-set-bosskey', null),
-      )
+      document.getElementById('cancel').addEventListener('click', () => window.bosskey.cancel())
     </script>
   </body>
 </html>

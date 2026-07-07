@@ -15,6 +15,9 @@ const { DEFAULT_BOSS_KEY, nextVisibility, registerBossKey, setBossKey } = requir
     cb: () => void,
   ) => { ok: boolean; accel: string }
 }
+const { DEFAULTS } = require('../../desktop/lib/settings.cjs') as {
+  DEFAULTS: Record<string, unknown>
+}
 
 type FakeGlobalShortcut = {
   register: (accel: string, cb: () => void) => boolean
@@ -34,6 +37,10 @@ function fakeGlobalShortcut(overrides: Partial<FakeGlobalShortcut> = {}): FakeGl
 describe('DEFAULT_BOSS_KEY', () => {
   it('기본 보스키는 CommandOrControl+Alt+Space', () => {
     expect(DEFAULT_BOSS_KEY).toBe('CommandOrControl+Alt+Space')
+  })
+
+  it('bosskey.cjs 의 DEFAULT_BOSS_KEY 는 settings.cjs 의 DEFAULTS.bossKey 와 항상 동일해야 한다 (디싱크 방지)', () => {
+    expect(DEFAULT_BOSS_KEY).toBe(DEFAULTS.bossKey)
   })
 })
 

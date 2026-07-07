@@ -212,8 +212,8 @@ function toggleTheme() {
 }
 
 // 보스키 변경용 초소형 유틸리티 창(간이 accelerator 캡처 입력). 트레이 메뉴 "보스키
-// 변경" 에서 연다. nodeIntegration:true 로 여는 별도 창 — 메인 트레이 창(contextIsolation)
-// 과 정책이 다르지만 서로 독립이라 무관하다.
+// 변경" 에서 연다. 메인 트레이 창과 동일한 보안 패턴(preload + contextBridge, Task 7
+// 보안 리뷰 반영) — nodeIntegration:false / contextIsolation:true.
 let bossWin = null
 function openBossKeyDialog() {
   if (bossWin) {
@@ -225,8 +225,17 @@ function openBossKeyDialog() {
     height: 200,
     resizable: false,
     title: '보스키 변경',
-    webPreferences: { nodeIntegration: true, contextIsolation: false },
+    webPreferences: {
+      preload: path.join(__dirname, 'bosskey-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
   })
+  // 벨트-앤-서스펜더: 이 창은 정적 로컬 파일(bosskey.html)만 로드하는 것을 전제하므로,
+  // 새 창 열기·다른 위치로의 항법(navigate)을 코드로도 명시적으로 차단해 그 가정을
+  // 강제한다(파일이 로컬이라도 이 가정이 깨지지 않도록 방어).
+  bossWin.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  bossWin.webContents.on('will-navigate', (e) => e.preventDefault())
   bossWin.loadFile(path.join(__dirname, 'bosskey.html'), {
     search: 'cur=' + encodeURIComponent(settings.bossKey),
   })
