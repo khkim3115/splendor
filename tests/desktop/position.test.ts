@@ -104,10 +104,10 @@ describe('isValidResize', () => {
     expect(isValidResize({ w: Infinity, h: 200 })).toBe(false)
   })
   it('누락된 값이면 무효하다', () => {
-    expect(isValidResize({ w: undefined, h: 200 } as any)).toBe(false)
-    expect(isValidResize({} as any)).toBe(false)
+    expect(isValidResize({ w: undefined, h: 200 } as unknown as { w: number; h: number })).toBe(false)
+    expect(isValidResize({} as unknown as { w: number; h: number })).toBe(false)
   })
   it('문자열 등 숫자가 아닌 값이면 무효하다', () => {
-    expect(isValidResize({ w: '250' as any, h: 200 })).toBe(false)
+    expect(isValidResize({ w: '250', h: 200 } as unknown as { w: number; h: number })).toBe(false)
   })
 })

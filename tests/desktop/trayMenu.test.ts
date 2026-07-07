@@ -10,6 +10,7 @@ const { buildTrayTemplate } = require('../../desktop/lib/trayMenu.cjs') as {
       hasCustomPos: boolean
       autoOn: boolean
       platform?: string
+      updateReady?: boolean
     },
     handlers: {
       onOpen: () => void
@@ -19,6 +20,7 @@ const { buildTrayTemplate } = require('../../desktop/lib/trayMenu.cjs') as {
       onResetPosition: () => void
       onToggleAutostart: (checked: boolean) => void
       onQuit: () => void
+      onInstallUpdate?: () => void
     },
   ) => Array<Record<string, unknown>>
 }
