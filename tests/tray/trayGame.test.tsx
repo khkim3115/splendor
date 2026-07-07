@@ -2,10 +2,13 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { setAiDelayScale } from '../../src/ai/client'
 import { TrayGame } from '../../src/tray/screens/TrayGame'
 import { useGameStore } from '../../src/store/gameStore'
-import { baseState, patchPlayer, gems } from '../helpers'
+import { baseState, patchPlayer, gems, tokens } from '../helpers'
 import type { GameState } from '../../src/engine'
+
+setAiDelayScale(0)
 
 function humanVsAi(overrides: Partial<GameState> = {}): GameState {
   const s = baseState(2, 42, { currentPlayer: 0, ...overrides })
@@ -205,5 +208,194 @@ describe('TrayGame 접힘 뷰', () => {
     const noblesPanel = document.querySelector('[data-tray-panel="nobles"]')!
     expect(noblesPanel.getAttribute('aria-label')).toBe('귀족')
     expect(noblesPanel.textContent).not.toContain('👑')
+  })
+})
+
+describe('TrayGame 플레이 배선 (play)', () => {
+  beforeEach(resetStore)
+  afterEach(cleanup)
+
+  it('토큰 3색 집기 → 확정 → actionLog 기록', async () => {
+    const user = userEvent.setup()
+    const { setupGame } = await import('../../src/engine')
+    const players = [
+      { type: 'human', name: '나' },
+      { type: 'ai', name: 'AI', difficulty: 'easy' },
+    ] as const
+    let seed = 42
+    while (setupGame({ players: [...players], seed }).startPlayer !== 0) seed++
+
+    useGameStore.getState().newGame({ players: [...players], seed })
+    const committed = useGameStore.getState().committed!
+    render(<TrayGame committed={committed} />)
+
+    await user.click(screen.getByRole('button', { name: '흰 집기' }))
+    await user.click(screen.getByRole('button', { name: '파 집기' }))
+    await user.click(screen.getByRole('button', { name: '초 집기' }))
+    await user.click(screen.getByRole('button', { name: '확정' }))
+
+    expect(useGameStore.getState().actionLog.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('불법 조합(공급<4인 색 2개)이면 lastError(§)가 표시된다', async () => {
+    const user = userEvent.setup()
+    // 빨 공급을 3개로 낮춰 TAKE_SAME 빨을 불법(§4.2)으로 만든다
+    const s = humanVsAi({ supply: tokens({ white: 4, blue: 4, green: 4, red: 3, black: 4 }) })
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    // 빨 두 번 = TAKE_SAME 빨 조립 → 공급<4 → 엔진이 거부, lastError 세팅
+    await user.click(screen.getByRole('button', { name: '빨 집기' }))
+    await user.click(screen.getByRole('button', { name: '빨 집기' }))
+    expect(screen.getByText(/§/)).toBeTruthy()
+    expect(useGameStore.getState().lastError).toContain('§')
+  })
+
+  it('AI 차례에는 행동 바가 렌더되지 않는다', () => {
+    const s = humanVsAi({ currentPlayer: 1 })
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    expect(screen.queryByRole('button', { name: '흰 집기' })).toBeNull()
+  })
+})
+
+describe('TrayGame 강제 페이즈 — discard (§5)', () => {
+  beforeEach(resetStore)
+  afterEach(cleanup)
+
+  /** 사람(0)이 10개 초과 토큰을 들고 반납해야 하는 상태 */
+  function discardState(mustDiscard: 1 | 2 | 3): GameState {
+    const s = humanVsAi({ phase: { kind: 'discard', mustDiscard } })
+    // 흰 8 + 파 3 = 11개(2인전 공급은 각 4개지만 반납 상태 검증엔 무관)
+    return patchPlayer(s, 0, { tokens: tokens({ white: 8, blue: 3 }) })
+  }
+
+  it('반납 affordance가 렌더되고 정확히 mustDiscard개 반납 시 phase가 play로 풀린다', async () => {
+    const user = userEvent.setup()
+    const s = discardState(1)
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+
+    // 흰 토큰 1개 반납 선택 후 확정
+    await user.click(screen.getByRole('button', { name: '흰 반납' }))
+    await user.click(screen.getByRole('button', { name: '반납 확정' }))
+
+    const after = useGameStore.getState().committed!
+    // discard가 해소되어 더 이상 사람의 반납 대기가 아니다 (턴 종료 후 AI 진행 가능)
+    expect(after.phase.kind).not.toBe('discard')
+    expect(useGameStore.getState().actionLog[0]!.type).toBe('DISCARD')
+    // 반납 후 사람(0)의 토큰 총량이 10개로 내려왔다 (§5)
+    const { tokenTotal } = await import('../../src/engine')
+    expect(tokenTotal(after.players[0]!.tokens)).toBe(10)
+  })
+
+  it('2개 반납: 두 색을 골라 확정하면 discard가 해소된다', async () => {
+    const user = userEvent.setup()
+    const s = discardState(2)
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+
+    await user.click(screen.getByRole('button', { name: '흰 반납' }))
+    await user.click(screen.getByRole('button', { name: '파 반납' }))
+    await user.click(screen.getByRole('button', { name: '반납 확정' }))
+
+    expect(useGameStore.getState().committed!.phase.kind).toBe('play')
+  })
+
+  it('부족하게 선택하면 확정 버튼이 비활성(반납 미완)', async () => {
+    const user = userEvent.setup()
+    const s = discardState(2)
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+
+    await user.click(screen.getByRole('button', { name: '흰 반납' }))
+    const confirm = screen.getByRole('button', { name: '반납 확정' })
+    expect(confirm.hasAttribute('disabled')).toBe(true)
+    // 여전히 discard 페이즈
+    expect(useGameStore.getState().committed!.phase.kind).toBe('discard')
+  })
+})
+
+describe('TrayGame 강제 페이즈 — chooseNoble (§9-J)', () => {
+  beforeEach(resetStore)
+  afterEach(cleanup)
+
+  /** 사람(0)이 귀족 1·5를 동시 충족 → 선택 대기 */
+  function nobleState(): GameState {
+    const s = humanVsAi({
+      phase: { kind: 'chooseNoble', options: [1, 5] },
+      nobles: [1, 5],
+    })
+    return patchPlayer(s, 0, {
+      bonuses: gems({ white: 3, green: 3, red: 3, black: 3 }),
+    })
+  }
+
+  it('선택지 귀족이 렌더되고 하나 고르면 그 귀족을 획득하며 turn이 넘어간다', async () => {
+    const user = userEvent.setup()
+    const s = nobleState()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+
+    const buttons = screen.getAllByRole('button', { name: /맞이/ })
+    expect(buttons.length).toBe(2)
+    await user.click(buttons[0]!)
+
+    const after = useGameStore.getState().committed!
+    expect(after.phase.kind).not.toBe('chooseNoble')
+    expect(useGameStore.getState().actionLog[0]!.type).toBe('CHOOSE_NOBLE')
+    // 귀족 1명을 획득 (사람이 이미 턴을 넘겼으면 currentPlayer가 AI)
+    const claimed = after.players.some((p) => p.nobles.length === 1)
+    expect(claimed).toBe(true)
+  })
+})
+
+describe('TrayGame 강제 페이즈 — PASS-only (§9-G)', () => {
+  beforeEach(resetStore)
+  afterEach(cleanup)
+
+  /** 사람(0)에게 어떤 합법 play 행동도 없는 상태 (공급 0 · 예약 3 · 구매 불가) */
+  function passOnlyState(): GameState {
+    const s = humanVsAi()
+    const emptyBoard = s.board.map((row) => row.map(() => null))
+    return {
+      ...s,
+      supply: tokens(),
+      decks: [[], [], []],
+      board: emptyBoard,
+      nobles: [],
+      players: s.players.map((p, i) =>
+        i === 0
+          ? {
+              ...p,
+              tokens: tokens(),
+              bonuses: gems(),
+              reserved: [
+                { cardId: 40, fromDeck: false },
+                { cardId: 41, fromDeck: false },
+                { cardId: 42, fromDeck: false },
+              ],
+            }
+          : p,
+      ),
+    } as GameState
+  }
+
+  it('합법 행동이 없으면 패스 affordance가 렌더되고 패스 시 턴이 넘어간다', async () => {
+    const user = userEvent.setup()
+    const s = passOnlyState()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+
+    const pass = screen.getByRole('button', { name: '패스' })
+    await user.click(pass)
+
+    expect(useGameStore.getState().actionLog[0]!.type).toBe('PASS')
+  })
+
+  it('합법 행동이 있으면 패스 버튼은 렌더되지 않는다', () => {
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    expect(screen.queryByRole('button', { name: '패스' })).toBeNull()
   })
 })
