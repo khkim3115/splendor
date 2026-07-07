@@ -21,6 +21,13 @@ jobs:
         run: |
           npm ci
           npm run build:desktop
+      - name: 상대 base 검증 (dist/tray.html — app:// 는 절대 /splendor/ 경로에서 404)
+        shell: bash
+        run: |
+          if grep -q '"/splendor/' dist/tray.html; then
+            echo "::error::dist/tray.html 이 절대 base(/splendor/)로 빌드됨 — app:// 프로토콜에서 404 발생"
+            exit 1
+          fi
       - name: Electron 셸 의존성
         working-directory: desktop
         run: npm ci
@@ -51,6 +58,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          shopt -s nullglob
           gh release upload "${{ github.event.release.tag_name }}" \
             release/Splendor-Tray-Setup.exe release/latest.yml release/*.blockmap --clobber
 
@@ -66,6 +74,13 @@ jobs:
         run: |
           npm ci
           npm run build:desktop
+      - name: 상대 base 검증 (dist/tray.html — app:// 는 절대 /splendor/ 경로에서 404)
+        shell: bash
+        run: |
+          if grep -q '"/splendor/' dist/tray.html; then
+            echo "::error::dist/tray.html 이 절대 base(/splendor/)로 빌드됨 — app:// 프로토콜에서 404 발생"
+            exit 1
+          fi
       - name: Electron 셸 의존성
         working-directory: desktop
         run: npm ci

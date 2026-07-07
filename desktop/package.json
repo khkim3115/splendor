@@ -20,7 +20,15 @@
   "build": {
     "appId": "com.khkim3115.splendor",
     "productName": "Splendor",
-    "files": ["main.js", "preload.js", "bosskey.html", "lib/**/*", "scripts/**/*", "assets/**/*"],
+    "files": [
+      "main.js",
+      "preload.js",
+      "bosskey-preload.js",
+      "bosskey.html",
+      "lib/**/*",
+      "scripts/**/*",
+      "assets/**/*"
+    ],
     "extraResources": [{ "from": "../dist", "to": "dist" }],
     "afterPack": "scripts/adhoc-sign.cjs",
     "directories": { "output": "release" },
