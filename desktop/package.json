@@ -29,6 +29,7 @@
       "icon": "assets/icon.png"
     },
     "nsis": {
+      "artifactName": "Splendor-Tray-Setup.exe",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
@@ -42,7 +43,7 @@
       "category": "public.app-category.games"
     },
     "dmg": {
-      "artifactName": "${productName}-${version}-mac.${ext}"
+      "artifactName": "Splendor-Tray.dmg"
     },
     "publish": [{ "provider": "github", "owner": "khkim3115", "repo": "splendor" }]
   }
