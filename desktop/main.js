@@ -1,5 +1,16 @@
 'use strict'
-const { app, BrowserWindow, Tray, Menu, nativeImage, protocol, net, ipcMain, screen } = require('electron')
+const {
+  app,
+  BrowserWindow,
+  Tray,
+  Menu,
+  nativeImage,
+  protocol,
+  net,
+  ipcMain,
+  screen,
+  globalShortcut,
+} = require('electron')
 const path = require('path')
 const { pathToFileURL } = require('url')
 const { resolveAppRequest } = require('./lib/appProtocol.cjs')
@@ -8,6 +19,7 @@ const { readSettings, writeSettings } = require('./lib/settings.cjs')
 const { clampOpacity, clampPercent } = require('./lib/opacity.cjs')
 const { bgFor, nextTheme } = require('./lib/theme.cjs')
 const { clampBounds, isUserMove, isValidResize } = require('./lib/position.cjs')
+const { nextVisibility, registerBossKey: tryRegisterBossKey, setBossKey } = require('./lib/bosskey.cjs')
 
 // 패키지된 앱에서 dist 는 asar 밖(extraResources)에 둔다(Task 9). 개발 모드는 ../dist.
 const DIST_ROOT = app.isPackaged
@@ -173,6 +185,18 @@ function hidePanel() {
   if (win) win.hide()
 }
 
+// 어디서든(포커스 무관) 즉시 show/hide — 전역 보스키의 콜백(요트다이스 이식).
+function togglePanel() {
+  const isVisible = Boolean(win && win.isVisible() && !win.isMinimized())
+  if (nextVisibility(isVisible) === 'hide') hidePanel()
+  else showPanel()
+}
+
+/** 보스키를 accel 로 등록한다(순수 로직은 lib/bosskey.cjs, 여기서는 실제 globalShortcut 주입). */
+function registerBossKey(accel) {
+  return tryRegisterBossKey(globalShortcut, accel, () => togglePanel())
+}
+
 // 테마 적용 — 배경색 플립(깜빡임 방지) + 렌더러 푸시(Plan 1 onTheme 이 소비).
 function applyTheme(theme) {
   if (!win) return
@@ -187,6 +211,30 @@ function toggleTheme() {
   rebuildTrayMenu()
 }
 
+// 보스키 변경용 초소형 유틸리티 창(간이 accelerator 캡처 입력). 트레이 메뉴 "보스키
+// 변경" 에서 연다. nodeIntegration:true 로 여는 별도 창 — 메인 트레이 창(contextIsolation)
+// 과 정책이 다르지만 서로 독립이라 무관하다.
+let bossWin = null
+function openBossKeyDialog() {
+  if (bossWin) {
+    bossWin.focus()
+    return
+  }
+  bossWin = new BrowserWindow({
+    width: 280,
+    height: 200,
+    resizable: false,
+    title: '보스키 변경',
+    webPreferences: { nodeIntegration: true, contextIsolation: false },
+  })
+  bossWin.loadFile(path.join(__dirname, 'bosskey.html'), {
+    search: 'cur=' + encodeURIComponent(settings.bossKey),
+  })
+  bossWin.on('closed', () => {
+    bossWin = null
+  })
+}
+
 function buildTrayMenu() {
   return Menu.buildFromTemplate([
     { label: '열기', click: () => showPanel() },
@@ -196,6 +244,7 @@ function buildTrayMenu() {
       checked: settings.theme === 'light',
       click: () => toggleTheme(),
     },
+    { label: '보스키 변경 (' + settings.bossKey + ')', click: () => openBossKeyDialog() },
     { type: 'separator' },
     { label: '종료', click: () => app.quit() },
   ])
@@ -210,10 +259,7 @@ function createTray() {
   tray = new Tray(icon)
   tray.setToolTip('Splendor')
   rebuildTrayMenu()
-  tray.on('click', () => {
-    if (win && win.isVisible() && !win.isMinimized()) hidePanel()
-    else showPanel()
-  })
+  tray.on('click', () => togglePanel())
   tray.on('right-click', () => tray.popUpContextMenu(buildTrayMenu()))
 }
 
@@ -235,6 +281,14 @@ app.whenReady().then(() => {
   createTray()
   registerIpc()
 
+  // 전역 보스키 등록 — 어디서든(다른 앱이 포커스여도) 즉시 show/hide 토글.
+  // 다른 앱이 이미 같은 조합을 선점했으면 register() 가 false 를 반환한다 —
+  // 크래시시키지 않고 콘솔로 안내(Task 8 트레이 메뉴가 현재 보스키 라벨로도 노출).
+  const bossOk = registerBossKey(settings.bossKey)
+  if (!bossOk) {
+    console.warn('보스키 등록 실패(충돌):', settings.bossKey)
+  }
+
   if (process.platform === 'darwin' && app.dock) {
     // 메뉴바(트레이) 전용 discreet 앱 — Dock 아이콘 숨김.
     app.dock.hide()
@@ -252,6 +306,12 @@ app.on('second-instance', () => {
 
 app.on('before-quit', () => {
   isQuitting = true
+})
+
+// 앱 종료 시 전역 보스키를 반드시 해제한다 — 등록만 하고 안 풀면 앱이 죽어도
+// OS 가 조합을 계속 쥐고 있을 수 있다(Electron 요구 관례).
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll()
 })
 
 function registerIpc() {
@@ -277,5 +337,20 @@ function registerIpc() {
     const display = screen.getDisplayMatching(cur)
     const bounds = clampBounds({ w, h }, anchor, display.workArea)
     setBoundsProgrammatically(bounds)
+  })
+
+  // bosskey.html → 새 조합 저장 시도(또는 accel=null 로 취소). 실패(충돌) 시
+  // 기존 조합을 잃지 않도록 setBossKey 가 자동으로 복구한다(lib/bosskey.cjs).
+  ipcMain.on('tray-set-bosskey', (_e, accel) => {
+    if (accel) {
+      const result = setBossKey(globalShortcut, settings.bossKey, accel, () => togglePanel())
+      if (result.ok) {
+        settings = writeSettings(app.getPath('userData'), { bossKey: result.accel })
+      } else {
+        console.warn('보스키 등록 실패(충돌):', accel)
+      }
+    }
+    if (bossWin) bossWin.close()
+    rebuildTrayMenu()
   })
 }
