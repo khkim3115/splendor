@@ -52,14 +52,25 @@ function BoardPanel({ committed, lang }: { committed: GameState; lang: 'ko' | 'e
 function OpponentsPanel({ committed, me, lang }: { committed: GameState; me: number; lang: 'ko' | 'en' }) {
   return (
     <section className="tray-panel" data-tray-panel="opponents" aria-label="상대">
-      {committed.players.map((_, i) =>
-        i === me ? null : (
-          <div className="tray-opp" data-opp-index={i} key={i}>
-            <span className="tray-opp-name">{committed.config.players[i]!.name}</span>
+      {committed.players.map((_, i) => {
+        if (i === me) return null
+        const isCurrent = i === committed.currentPlayer
+        return (
+          <div
+            className={`tray-opp${isCurrent ? ' tray-current is-current' : ''}`}
+            data-opp-index={i}
+            data-current={isCurrent ? 'true' : undefined}
+            aria-current={isCurrent ? 'true' : undefined}
+            key={i}
+          >
+            <span className="tray-opp-name">
+              {isCurrent ? '▸ ' : ''}
+              {committed.config.players[i]!.name}
+            </span>
             <span className="tray-opp-line">{playerLine(committed, i, lang)}</span>
           </div>
-        ),
-      )}
+        )
+      })}
     </section>
   )
 }
@@ -67,14 +78,17 @@ function OpponentsPanel({ committed, me, lang }: { committed: GameState; me: num
 function NoblesPanel({ committed, lang }: { committed: GameState; lang: 'ko' | 'en' }) {
   return (
     <section className="tray-panel" data-tray-panel="nobles" aria-label="귀족">
+      <span className="tray-panel-label">귀족</span>
       {committed.nobles.map((id) => {
-        const req = NOBLES[id]!.requirement
+        const noble = NOBLES[id]!
+        const req = noble.requirement
+        const score = lang === 'ko' ? `${noble.points}점` : `${noble.points}pt`
+        const reqCode = GEM_COLORS.filter((c) => req[c] > 0)
+          .map((c) => `${gemCode(c, lang)}${req[c]}`)
+          .join(' ')
         return (
           <div className="tray-noble" data-noble-id={id} key={id}>
-            👑{' '}
-            {GEM_COLORS.filter((c) => req[c] > 0)
-              .map((c) => `${gemCode(c, lang)}${req[c]}`)
-              .join(' ')}
+            {score} · {reqCode}
           </div>
         )
       })}

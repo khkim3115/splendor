@@ -128,4 +128,82 @@ describe('TrayGame 접힘 뷰', () => {
     const code = { white:'흰', blue:'파', green:'초', red:'빨', black:'검' }[someColor]
     expect(panel.textContent).toContain(code)
   })
+
+  it('상대 펼침: 현재 차례인 상대 행에만 ▸ 마커가 붙는다 (AI 차례)', async () => {
+    const user = userEvent.setup()
+    const s = humanVsAi({ currentPlayer: 1 })
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    await user.click(screen.getByRole('button', { name: '상대' }))
+
+    const panel = document.querySelector('[data-tray-panel="opponents"]')!
+    const row = panel.querySelector('[data-opp-index="1"]')!
+    expect(row.getAttribute('data-current')).toBe('true')
+    expect(row.getAttribute('aria-current')).toBe('true')
+    expect(row.textContent).toContain('▸')
+  })
+
+  it('상대 펼침: 내 차례(human)면 어떤 상대 행에도 ▸ 마커가 없다', async () => {
+    const user = userEvent.setup()
+    const s = humanVsAi({ currentPlayer: 0 })
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    await user.click(screen.getByRole('button', { name: '상대' }))
+
+    const panel = document.querySelector('[data-tray-panel="opponents"]')!
+    const row = panel.querySelector('[data-opp-index="1"]')!
+    expect(row.getAttribute('data-current')).not.toBe('true')
+    expect(row.hasAttribute('aria-current')).toBe(false)
+    expect(row.textContent).not.toContain('▸')
+  })
+
+  it('귀족 펼침: "귀족" 섹션 헤더만 있고 👑 이모지는 없다', async () => {
+    const user = userEvent.setup()
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    await user.click(screen.getByRole('button', { name: '귀족' }))
+
+    const panel = document.querySelector('[data-tray-panel="nobles"]')!
+    expect(panel.getAttribute('aria-label')).toBe('귀족')
+    expect(panel.textContent).not.toContain('👑')
+  })
+
+  it('3인전: 나를 제외한 상대 전원이 행으로 렌더되고, 현재 차례인 상대만 ▸ 마커를 갖는다', async () => {
+    const user = userEvent.setup()
+    const s3 = baseState(3, 7, { currentPlayer: 2 })
+    const s: GameState = {
+      ...s3,
+      config: {
+        ...s3.config,
+        players: [
+          { type: 'human', name: '나' },
+          { type: 'ai', name: 'AI-1', difficulty: 'easy' },
+          { type: 'ai', name: 'AI-2', difficulty: 'easy' },
+        ],
+      },
+    }
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    await user.click(screen.getByRole('button', { name: '상대' }))
+
+    const panel = document.querySelector('[data-tray-panel="opponents"]')!
+    const rows = panel.querySelectorAll('[data-opp-index]')
+    expect(rows).toHaveLength(2) // 3인전 → 나를 제외한 상대 2명
+
+    const row1 = panel.querySelector('[data-opp-index="1"]')!
+    const row2 = panel.querySelector('[data-opp-index="2"]')!
+    // 현재 차례(플레이어 2)만 마커를 갖는다
+    expect(row1.getAttribute('data-current')).not.toBe('true')
+    expect(row2.getAttribute('data-current')).toBe('true')
+    expect(row2.textContent).toContain('▸')
+    expect(row1.textContent).not.toContain('▸')
+
+    const noblesPanel0 = document.querySelector('[data-tray-panel="nobles"]')
+    expect(noblesPanel0).toBeNull()
+    await user.click(screen.getByRole('button', { name: '귀족' }))
+    const noblesPanel = document.querySelector('[data-tray-panel="nobles"]')!
+    expect(noblesPanel.getAttribute('aria-label')).toBe('귀족')
+    expect(noblesPanel.textContent).not.toContain('👑')
+  })
 })
