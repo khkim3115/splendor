@@ -7,7 +7,7 @@ const { shouldHideOnBlur } = require('./lib/windowPolicy.cjs')
 const { readSettings, writeSettings } = require('./lib/settings.cjs')
 const { clampOpacity, clampPercent } = require('./lib/opacity.cjs')
 const { bgFor, nextTheme } = require('./lib/theme.cjs')
-const { clampBounds } = require('./lib/position.cjs')
+const { clampBounds, isUserMove, isValidResize } = require('./lib/position.cjs')
 
 // 패키지된 앱에서 dist 는 asar 밖(extraResources)에 둔다(Task 9). 개발 모드는 ../dist.
 const DIST_ROOT = app.isPackaged
@@ -52,7 +52,23 @@ let tray = null
 let settings = null // app.whenReady 이후 초기화(userData 경로 필요)
 // setBounds() 호출은 'moved' 이벤트를 유발한다 — 프로그램 자체 이동을 사용자 드래그로
 // 오인해 저장하지 않도록 setBounds 전후로 세운다(요트다이스 positionPanel/moved 이식).
+// 다만 'moved' 가 항상 동기적으로 발생한다는 보장은 없다(Electron 문서 미보증) —
+// 이 플래그만으로는 비동기 발생·스퓨리어스 재발화 시 자기이동을 사용자 이동으로
+// 오분류할 수 있다. 그래서 아래 lastProgrammaticBounds + isUserMove() 의
+// getBounds 비교가 "권위 있는" 판별 근거이고, suppressMoveSave 는 벨트-앤-서스펜더
+// 용도의 1차 방어선으로만 유지한다.
 let suppressMoveSave = false
+// 프로그램(코드)이 마지막으로 setBounds() 한 위치 — moved 핸들러가 실제
+// win.getBounds() 와 이 값을 비교해 사용자 드래그인지 판별한다(isUserMove).
+let lastProgrammaticBounds = null
+
+/** win.setBounds(bounds) 를 프로그램 자체 이동으로 표시하며 호출한다(공용 헬퍼). */
+function setBoundsProgrammatically(bounds) {
+  suppressMoveSave = true
+  lastProgrammaticBounds = { x: bounds.x, y: bounds.y }
+  win.setBounds(bounds)
+  suppressMoveSave = false
+}
 
 function createWindow() {
   win = new BrowserWindow({
@@ -87,11 +103,15 @@ function createWindow() {
     }
   })
 
-  // 사용자 드래그로 창을 옮긴 경우에만 winPos 를 저장한다. setBounds() 로 인한
-  // 프로그램 자체 이동은 suppressMoveSave 로 걸러낸다(tray-resize·positionPanel).
+  // 사용자 드래그로 창을 옮긴 경우에만 winPos 를 저장한다. suppressMoveSave 는
+  // 1차 방어선(빠른 경로)일 뿐, 권위 있는 판별은 isUserMove() 다 — 'moved' 가
+  // 비동기로 발생하거나 스퓨리어스하게 재발화해도, 실제 getBounds() 가 마지막
+  // 프로그램 설정 위치와 (허용오차 이내로) 같으면 사용자 이동으로 오저장하지 않는다.
   win.on('moved', () => {
+    const bounds = win.getBounds()
+    if (!isUserMove(bounds, lastProgrammaticBounds)) return
     if (suppressMoveSave) return
-    const { x, y } = win.getBounds()
+    const { x, y } = bounds
     settings = writeSettings(app.getPath('userData'), { winPos: { x, y } })
   })
 
@@ -126,9 +146,7 @@ function positionPanel() {
       bottom: settings.winPos.y + size.height,
     }
     const b = clampBounds({ w: size.width, h: size.height }, anchor, display.workArea)
-    suppressMoveSave = true
-    win.setBounds(b)
-    suppressMoveSave = false
+    setBoundsProgrammatically(b)
     return
   }
   // 저장 위치 없음: 커서 근처 우하단 앵커(작업영역 우하단에서 8px 여백)
@@ -140,9 +158,7 @@ function positionPanel() {
     { right: wa.x + wa.width - 8, bottom: wa.y + wa.height - 8 },
     wa,
   )
-  suppressMoveSave = true
-  win.setBounds(b)
-  suppressMoveSave = false
+  setBoundsProgrammatically(b)
 }
 
 function showPanel() {
@@ -251,14 +267,15 @@ function registerIpc() {
 
   // 렌더러가 패널 확장/축소로 계산한 목표 {w,h} 를 보내면, 현재 창의 우하단을
   // 앵커로 유지한 채 작업영역에 클램프해 리사이즈한다(점진적 공개).
-  ipcMain.on('tray-resize', (_e, { w, h }) => {
+  ipcMain.on('tray-resize', (_e, { w, h } = {}) => {
     if (!win) return
+    // 입력 검증(Fix 2): NaN/0/음수/누락된 w·h 를 그대로 setBounds 에 넘기면
+    // Electron 이 미정의 동작(창 소실 등)을 보일 수 있다 — 조기 반환으로 무시.
+    if (!isValidResize({ w, h })) return
     const cur = win.getBounds()
     const anchor = { right: cur.x + cur.width, bottom: cur.y + cur.height }
     const display = screen.getDisplayMatching(cur)
     const bounds = clampBounds({ w, h }, anchor, display.workArea)
-    suppressMoveSave = true
-    win.setBounds(bounds)
-    suppressMoveSave = false
+    setBoundsProgrammatically(bounds)
   })
 }
