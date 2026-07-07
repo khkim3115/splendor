@@ -1,4 +1,5 @@
 import type { GameState } from '../../../engine'
+import { roundNumber } from '../../round'
 import { AiThinkingBadge } from './AiThinkingIndicator'
 
 export function TurnBanner({
@@ -16,6 +17,9 @@ export function TurnBanner({
   const name = kind?.name ?? ''
   return (
     <div className="turn-banner">
+      <span className="turn-round" role="status" aria-live="polite" aria-atomic="true">
+        {roundNumber(view)}라운드
+      </span>
       <span className="turn-name">{name}님의 차례</span>
       {kind?.type === 'ai' && <AiThinkingBadge thinking={aiThinking} />}
       {view.finalRound && <span className="final-round-badge">마지막 라운드!</span>}
