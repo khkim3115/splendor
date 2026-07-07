@@ -75,4 +75,23 @@ describe('TrayGame 접힘 뷰', () => {
     expect(screen.getByRole('button', { name: '상대' })).toBeTruthy()
     expect(screen.getByRole('button', { name: '귀족' })).toBeTruthy()
   })
+
+  it('보드 펼침: 3티어 격자 + 공개 카드 코드 + 공급 토큰이 표시된다', async () => {
+    const user = userEvent.setup()
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    await user.click(screen.getByRole('button', { name: '보드' }))
+
+    const panel = document.querySelector('[data-tray-panel="board"]')!
+    // 3티어 행이 있다
+    expect(panel.querySelectorAll('[data-tray-tier]')).toHaveLength(3)
+    // 첫 공개 카드의 코드가 어딘가 렌더된다
+    const firstCard = s.board[0]!.find((id) => id !== null)!
+    const { cardCode } = await import('../../src/tray/format')
+    const { CARDS } = await import('../../src/engine')
+    expect(panel.textContent).toContain(cardCode(CARDS[firstCard]!, 'ko'))
+    // 공급 영역 존재
+    expect(panel.querySelector('[data-tray-supply]')).toBeTruthy()
+  })
 })

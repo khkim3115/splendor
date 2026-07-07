@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
-import { WINNING_PRESTIGE, type GameState } from '../../engine'
+import { CARDS, TOKEN_COLORS, WINNING_PRESTIGE, type GameState } from '../../engine'
 import { useGameStore, viewerIndexFor } from '../../store/gameStore'
-import { playerLine } from '../format'
+import { cardCode, gemCode, playerLine } from '../format'
 import { useTraySettings, type TrayExpand } from '../useTraySettings'
 
 const PANEL_LABEL: Record<keyof TrayExpand, string> = {
@@ -17,6 +17,36 @@ function targetSize(expand: TrayExpand): { w: number; h: number } {
   if (expand.board || expand.opponents) h = 440
   if (expand.nobles) h += 96
   return { w, h }
+}
+
+function BoardPanel({ committed, lang }: { committed: GameState; lang: 'ko' | 'en' }) {
+  return (
+    <section className="tray-panel" data-tray-panel="board" aria-label="보드">
+      {([3, 2, 1] as const).map((tier) => {
+        const row = committed.board[tier - 1]!
+        const deckLeft = committed.decks[tier - 1]!.length
+        return (
+          <div className="tray-tier" data-tray-tier={tier} key={tier}>
+            <span className="tray-tier-label">T{tier}</span>
+            {row.map((id, slot) => (
+              <span className="tray-cardcell" data-card-id={id ?? ''} key={slot}>
+                {id !== null ? cardCode(CARDS[id]!, lang) : '·'}
+              </span>
+            ))}
+            <span className="tray-deckleft">덱{deckLeft}</span>
+          </div>
+        )
+      })}
+      <div className="tray-supply" data-tray-supply aria-label="토큰 공급">
+        {TOKEN_COLORS.filter((c) => committed.supply[c] > 0).map((c) => (
+          <span className="tray-supplycell" key={c}>
+            {gemCode(c, lang)}
+            {committed.supply[c]}
+          </span>
+        ))}
+      </div>
+    </section>
+  )
 }
 
 export function TrayGame({ committed }: { committed: GameState }) {
@@ -68,11 +98,7 @@ export function TrayGame({ committed }: { committed: GameState }) {
         ))}
       </nav>
 
-      {expand.board && (
-        <section className="tray-panel" data-tray-panel="board" aria-label="보드">
-          {/* Task 7에서 채운다 */}
-        </section>
-      )}
+      {expand.board && <BoardPanel committed={committed} lang={gemCodeLang} />}
       {expand.opponents && (
         <section className="tray-panel" data-tray-panel="opponents" aria-label="상대">
           {/* Task 8에서 채운다 */}
