@@ -152,4 +152,51 @@ describe('buildTrayTemplate', () => {
       label: 'Windows 시작 시 자동 실행',
     })
   })
+
+  it('updateReady 가 없으면(undefined) 업데이트 설치 항목이 없다(기존 9항목 그대로)', () => {
+    const template = buildTrayTemplate(baseState, noopHandlers())
+    const labels = template.map((i) => i.label ?? `(${i.type})`)
+    expect(labels).toEqual([
+      '열기',
+      '라이트 모드',
+      '보스키 변경 (CommandOrControl+Alt+Space)',
+      '(separator)',
+      '위치 고정',
+      '위치 초기화',
+      'Windows 시작 시 자동 실행',
+      '(separator)',
+      '종료',
+    ])
+  })
+
+  it('updateReady:false 면 업데이트 설치 항목이 없다', () => {
+    const template = buildTrayTemplate({ ...baseState, updateReady: false }, noopHandlers())
+    expect(template.find((i) => i.label === '업데이트 설치 후 재시작')).toBeUndefined()
+  })
+
+  it('updateReady:true 면 "종료" 직전에 separator + "업데이트 설치 후 재시작" 항목이 추가된다', () => {
+    const template = buildTrayTemplate({ ...baseState, updateReady: true }, noopHandlers())
+    const labels = template.map((i) => i.label ?? `(${i.type})`)
+    expect(labels).toEqual([
+      '열기',
+      '라이트 모드',
+      '보스키 변경 (CommandOrControl+Alt+Space)',
+      '(separator)',
+      '위치 고정',
+      '위치 초기화',
+      'Windows 시작 시 자동 실행',
+      '(separator)',
+      '(separator)',
+      '업데이트 설치 후 재시작',
+      '종료',
+    ])
+  })
+
+  it('updateReady:true 항목의 click 은 onInstallUpdate 핸들러를 호출한다', () => {
+    const handlers = { ...noopHandlers(), onInstallUpdate: vi.fn() }
+    const template = buildTrayTemplate({ ...baseState, updateReady: true }, handlers)
+    const install = template.find((i) => i.label === '업데이트 설치 후 재시작') as { click: () => void }
+    install.click()
+    expect(handlers.onInstallUpdate).toHaveBeenCalledTimes(1)
+  })
 })

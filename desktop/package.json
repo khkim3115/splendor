@@ -7,7 +7,8 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder",
-    "smoke": "electron test/smoke.cjs"
+    "smoke": "electron test/smoke.cjs",
+    "dist:mac": "electron-builder --mac"
   },
   "devDependencies": {
     "electron": "^33.0.0",
@@ -15,5 +16,34 @@
   },
   "dependencies": {
     "electron-updater": "^6.3.0"
+  },
+  "build": {
+    "appId": "com.khkim3115.splendor",
+    "productName": "Splendor",
+    "files": ["main.js", "preload.js", "bosskey.html", "lib/**/*", "scripts/**/*", "assets/**/*"],
+    "extraResources": [{ "from": "../dist", "to": "dist" }],
+    "afterPack": "scripts/adhoc-sign.cjs",
+    "directories": { "output": "release" },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.png",
+      "darkModeSupport": true,
+      "category": "public.app-category.games"
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-mac.${ext}"
+    },
+    "publish": [{ "provider": "github", "owner": "khkim3115", "repo": "splendor" }]
   }
 }

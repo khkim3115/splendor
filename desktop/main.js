@@ -13,6 +13,7 @@ const {
 } = require('electron')
 const path = require('path')
 const { pathToFileURL } = require('url')
+const { autoUpdater } = require('electron-updater')
 const { resolveAppRequest } = require('./lib/appProtocol.cjs')
 const { shouldHideOnBlur } = require('./lib/windowPolicy.cjs')
 const { readSettings, writeSettings } = require('./lib/settings.cjs')
@@ -22,6 +23,7 @@ const { clampBounds, isUserMove, isValidResize } = require('./lib/position.cjs')
 const { nextVisibility, registerBossKey: tryRegisterBossKey, setBossKey } = require('./lib/bosskey.cjs')
 const { buildTrayTemplate } = require('./lib/trayMenu.cjs')
 const { loginItemArgs, startsHidden } = require('./lib/autostart.cjs')
+const { createUpdateState } = require('./lib/updateState.cjs')
 
 // 패키지된 앱에서 dist 는 asar 밖(extraResources)에 둔다(Task 9). 개발 모드는 ../dist.
 const DIST_ROOT = app.isPackaged
@@ -233,6 +235,42 @@ function setupAutostartDefault() {
   settings = writeSettings(app.getPath('userData'), { autostartDefaultApplied: true })
 }
 
+// Windows 전용 자동 업데이트(요트다이스 이식). mac 은 ad-hoc 서명(미서명)이라
+// 자동 업데이트를 제공하지 않는다 — 함수 진입에서 즉시 return(no-op).
+// 진행상태(ready 사실 보존 포함)는 순수 모듈 lib/updateState.cjs 가 계산하고,
+// 여기서는 electron-updater 이벤트를 그 모듈에 연결하고 트레이 메뉴만 갱신한다.
+const updateState = createUpdateState()
+
+function setupAutoUpdater() {
+  if (process.platform !== 'win32') return // mac 미서명 — 수동 .dmg
+  if (!app.isPackaged) return // 개발 모드는 no-op(패키지 앱만 대상)
+
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = false // 설치는 사용자가 메뉴에서 눌러야 실행(강제 재시작 금지)
+  // 릴리스 태그 스킴이 tray-vX.Y.Z 라 semver.valid() 가 실패한다 — true 로 두면 electron-updater
+  // 가 프리릴리스로 오인해 정식 릴리스를 놓친다. false 로 /releases/latest + latest.yml 사용.
+  autoUpdater.allowPrerelease = false
+
+  autoUpdater.on('checking-for-update', () => {
+    updateState.setChecking()
+  })
+  autoUpdater.on('download-progress', () => {
+    updateState.setDownloading()
+  })
+  autoUpdater.on('update-downloaded', () => {
+    updateState.setDownloaded() // ready 사실 — 이후 어떤 진행 이벤트로도 덮어써지지 않는다
+    rebuildTrayMenu()
+  })
+  autoUpdater.on('error', (err) => {
+    updateState.setError(err && err.message)
+    console.warn('자동 업데이트 오류:', err && err.message)
+  })
+
+  const check = () => autoUpdater.checkForUpdates().catch(() => {})
+  check()
+  setInterval(check, 60 * 60 * 1000) // 1시간 간격
+}
+
 // 보스키 변경용 초소형 유틸리티 창(간이 accelerator 캡처 입력). 트레이 메뉴 "보스키
 // 변경" 에서 연다. 메인 트레이 창과 동일한 보안 패턴(preload + contextBridge, Task 7
 // 보안 리뷰 반영) — nodeIntegration:false / contextIsolation:true.
@@ -276,6 +314,7 @@ function buildTrayMenu() {
     hasCustomPos: !!settings.winPos,
     autoOn: settings.autostart,
     platform: process.platform,
+    updateReady: updateState.ready,
   }
   const handlers = {
     onOpen: () => showPanel(),
@@ -293,6 +332,10 @@ function buildTrayMenu() {
     onToggleAutostart: (checked) => {
       settings = writeSettings(app.getPath('userData'), { autostart: checked })
       applyAutostart(checked)
+    },
+    onInstallUpdate: () => {
+      isQuitting = true // close→hide 가드를 통과시켜 실제 종료·설치되게 한다
+      autoUpdater.quitAndInstall()
     },
     onQuit: () => {
       isQuitting = true
@@ -344,6 +387,9 @@ app.whenReady().then(() => {
 
   // 자동실행 기본값(ON) — 패키지 앱 첫 실행에서만 OS 로그인 항목에 반영(setupAutostartDefault 참조).
   setupAutostartDefault()
+
+  // Windows 자동 업데이트 — 패키지 앱에서만, mac 은 no-op(setupAutoUpdater 내부 가드).
+  setupAutoUpdater()
 
   if (process.platform === 'darwin' && app.dock) {
     // 메뉴바(트레이) 전용 discreet 앱 — Dock 아이콘 숨김.
