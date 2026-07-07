@@ -20,6 +20,8 @@ const { clampOpacity, clampPercent } = require('./lib/opacity.cjs')
 const { bgFor, nextTheme } = require('./lib/theme.cjs')
 const { clampBounds, isUserMove, isValidResize } = require('./lib/position.cjs')
 const { nextVisibility, registerBossKey: tryRegisterBossKey, setBossKey } = require('./lib/bosskey.cjs')
+const { buildTrayTemplate } = require('./lib/trayMenu.cjs')
+const { loginItemArgs, startsHidden } = require('./lib/autostart.cjs')
 
 // 패키지된 앱에서 dist 는 asar 밖(extraResources)에 둔다(Task 9). 개발 모드는 ../dist.
 const DIST_ROOT = app.isPackaged
@@ -54,8 +56,8 @@ if (!gotLock) {
 }
 
 let isQuitting = false
-// pinned: 창 고정(핀) 상태 — Task 8 에서 트레이 메뉴 토글로 노출 예정.
-// 여기서는 blur→hide 핸들러가 참조할 인메모리 기본값(false)만 마련한다.
+// pinned: 창 고정(핀) 상태 — blur→hide 핸들러(shouldHideOnBlur)가 참조하는 인메모리 미러.
+// app.whenReady 에서 settings.pinned 로 복원되고, 트레이 메뉴 "위치 고정" 토글로 갱신된다.
 let pinned = false
 let shownAt = 0
 
@@ -105,7 +107,11 @@ function createWindow() {
     win.webContents.send('tray-opacity', settings.opacity)
     win.webContents.send('tray-theme', settings.theme)
   })
-  win.once('ready-to-show', () => showPanel())
+  // 숨김 부팅(--hidden, 자동실행) 이면 창을 띄우지 않고 트레이만 상주시킨다.
+  // 이후 보스키/트레이 클릭으로 표시한다.
+  win.once('ready-to-show', () => {
+    if (!startsHidden(process.argv)) showPanel()
+  })
 
   // 바깥클릭(blur) 숨김 — pinned·표시직후 가드·devtools 열림은 예외(shouldHideOnBlur).
   win.on('blur', () => {
@@ -211,6 +217,22 @@ function toggleTheme() {
   rebuildTrayMenu()
 }
 
+/** OS 로그인 항목에 자동실행 설정을 반영한다(순수 인자 구성은 lib/autostart.cjs). */
+function applyAutostart(on) {
+  app.setLoginItemSettings(loginItemArgs(on))
+}
+
+// 패키지된 앱의 첫 실행에서만 자동실행 기본값(ON)을 OS 로그인 항목에 반영한다.
+// settings.autostartDefaultApplied 플래그로 1회만 수행 — 이후 사용자가 트레이 메뉴에서
+// 바꾼 선택(OFF 포함)을 다시 덮어쓰지 않는다. 개발 모드(app.isPackaged===false)에서는
+// 개발자 PC 의 로그인 항목을 건드리지 않도록 아예 수행하지 않는다.
+function setupAutostartDefault() {
+  if (!app.isPackaged) return
+  if (settings.autostartDefaultApplied) return
+  applyAutostart(settings.autostart)
+  settings = writeSettings(app.getPath('userData'), { autostartDefaultApplied: true })
+}
+
 // 보스키 변경용 초소형 유틸리티 창(간이 accelerator 캡처 입력). 트레이 메뉴 "보스키
 // 변경" 에서 연다. 메인 트레이 창과 동일한 보안 패턴(preload + contextBridge, Task 7
 // 보안 리뷰 반영) — nodeIntegration:false / contextIsolation:true.
@@ -244,19 +266,40 @@ function openBossKeyDialog() {
   })
 }
 
+// 실제 Menu.buildFromTemplate() 호출 + 상태 읽기/쓰기는 여기서 담당하고, 항목
+// 구성(라벨·checked·enabled)은 순수 함수 buildTrayTemplate(lib/trayMenu.cjs) 에 위임한다.
 function buildTrayMenu() {
-  return Menu.buildFromTemplate([
-    { label: '열기', click: () => showPanel() },
-    {
-      label: '라이트 모드',
-      type: 'checkbox',
-      checked: settings.theme === 'light',
-      click: () => toggleTheme(),
+  const state = {
+    isLight: settings.theme === 'light',
+    bossKey: settings.bossKey,
+    pinned,
+    hasCustomPos: !!settings.winPos,
+    autoOn: settings.autostart,
+    platform: process.platform,
+  }
+  const handlers = {
+    onOpen: () => showPanel(),
+    onToggleTheme: () => toggleTheme(),
+    onChangeBossKey: () => openBossKeyDialog(),
+    onTogglePin: (checked) => {
+      pinned = checked
+      settings = writeSettings(app.getPath('userData'), { pinned })
     },
-    { label: '보스키 변경 (' + settings.bossKey + ')', click: () => openBossKeyDialog() },
-    { type: 'separator' },
-    { label: '종료', click: () => app.quit() },
-  ])
+    onResetPosition: () => {
+      settings = writeSettings(app.getPath('userData'), { winPos: null })
+      positionPanel()
+      rebuildTrayMenu()
+    },
+    onToggleAutostart: (checked) => {
+      settings = writeSettings(app.getPath('userData'), { autostart: checked })
+      applyAutostart(checked)
+    },
+    onQuit: () => {
+      isQuitting = true
+      app.quit()
+    },
+  }
+  return Menu.buildFromTemplate(buildTrayTemplate(state, handlers))
 }
 
 function rebuildTrayMenu() {
@@ -274,6 +317,7 @@ function createTray() {
 
 app.whenReady().then(() => {
   settings = readSettings(app.getPath('userData'))
+  pinned = settings.pinned
   // app://splendor/<path> → dist 내부 파일. Content-Type 은 net.fetch(file://)
   // 가 확장자로 추론한다(.js/.mjs → text/javascript, .html → text/html, .css,
   // .json, .svg, .wasm 등). ESM 워커 청크(.js)가 올바른 MIME 으로 서빙돼야
@@ -297,6 +341,9 @@ app.whenReady().then(() => {
   if (!bossOk) {
     console.warn('보스키 등록 실패(충돌):', settings.bossKey)
   }
+
+  // 자동실행 기본값(ON) — 패키지 앱 첫 실행에서만 OS 로그인 항목에 반영(setupAutostartDefault 참조).
+  setupAutostartDefault()
 
   if (process.platform === 'darwin' && app.dock) {
     // 메뉴바(트레이) 전용 discreet 앱 — Dock 아이콘 숨김.

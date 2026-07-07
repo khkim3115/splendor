@@ -9,6 +9,9 @@ const DEFAULTS = {
   winPos: null,
   bossKey: 'CommandOrControl+Alt+Space',
   autostart: true,
+  // 자동실행 기본값(ON)을 OS 로그인 항목에 반영한 적이 있는지(패키지 앱 첫 실행 1회).
+  // 이후로는 사용자가 트레이 메뉴에서 바꾼 선택을 존중하고 다시 강제하지 않는다.
+  autostartDefaultApplied: false,
 }
 
 function settingsPath(userDataDir) {
