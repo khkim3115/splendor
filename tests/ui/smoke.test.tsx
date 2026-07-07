@@ -89,7 +89,8 @@ describe('UI 스모크', () => {
     await user.click(screen.getByLabelText(/^루비 토큰/))
     await user.click(screen.getByRole('button', { name: '가져오기 확정' }))
 
-    const live = document.querySelector('[aria-live="polite"]')!
+    // Announcer(로그 낭독) 영역을 특정 — 배너의 보이는 라운드 라이브 영역(#14)과 구분
+    const live = document.querySelector('.visually-hidden[aria-live="polite"]')!
     expect(live.textContent).toContain('획득')
     expect(live.textContent).toContain('차례')
   })
