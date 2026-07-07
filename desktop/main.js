@@ -1,9 +1,11 @@
 'use strict'
-const { app, BrowserWindow, Tray, Menu, nativeImage, protocol, net } = require('electron')
+const { app, BrowserWindow, Tray, Menu, nativeImage, protocol, net, ipcMain } = require('electron')
 const path = require('path')
 const { pathToFileURL } = require('url')
 const { resolveAppRequest } = require('./lib/appProtocol.cjs')
 const { shouldHideOnBlur } = require('./lib/windowPolicy.cjs')
+const { readSettings, writeSettings } = require('./lib/settings.cjs')
+const { clampOpacity, clampPercent } = require('./lib/opacity.cjs')
 
 // 패키지된 앱에서 dist 는 asar 밖(extraResources)에 둔다(Task 9). 개발 모드는 ../dist.
 const DIST_ROOT = app.isPackaged
@@ -45,6 +47,7 @@ let shownAt = 0
 
 let win = null
 let tray = null
+let settings = null // app.whenReady 이후 초기화(userData 경로 필요)
 
 function createWindow() {
   win = new BrowserWindow({
@@ -63,7 +66,11 @@ function createWindow() {
       nodeIntegration: false,
     },
   })
+  win.setOpacity(clampOpacity(settings.opacity))
   win.loadURL('app://splendor/tray.html')
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.send('tray-opacity', settings.opacity)
+  })
   win.once('ready-to-show', () => showPanel())
 
   // 바깥클릭(blur) 숨김 — pinned·표시직후 가드·devtools 열림은 예외(shouldHideOnBlur).
@@ -116,6 +123,7 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
+  settings = readSettings(app.getPath('userData'))
   // app://splendor/<path> → dist 내부 파일. Content-Type 은 net.fetch(file://)
   // 가 확장자로 추론한다(.js/.mjs → text/javascript, .html → text/html, .css,
   // .json, .svg, .wasm 등). ESM 워커 청크(.js)가 올바른 MIME 으로 서빙돼야
@@ -130,6 +138,7 @@ app.whenReady().then(() => {
   })
   createWindow()
   createTray()
+  registerIpc()
 
   if (process.platform === 'darwin' && app.dock) {
     // 메뉴바(트레이) 전용 discreet 앱 — Dock 아이콘 숨김.
@@ -149,3 +158,15 @@ app.on('second-instance', () => {
 app.on('before-quit', () => {
   isQuitting = true
 })
+
+function registerIpc() {
+  // 드래그 중(slider move) = 적용만, 드래그 종료(release) = persist. 클램프는
+  // clampOpacity/clampPercent 단일 소스(opacity.cjs)를 통해서만 이뤄진다.
+  ipcMain.on('tray-set-opacity', (_e, { value, persist }) => {
+    if (!win) return
+    win.setOpacity(clampOpacity(value))
+    if (persist) settings = writeSettings(app.getPath('userData'), { opacity: clampPercent(value) })
+  })
+
+  ipcMain.on('tray-hide', () => hidePanel())
+}
