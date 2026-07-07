@@ -1,0 +1,96 @@
+name: desktop-release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: 웹 트레이 번들 빌드 (dist/tray.html + ESM 워커)
+        run: |
+          npm ci
+          npm run build:desktop
+      - name: Electron 셸 의존성
+        working-directory: desktop
+        run: npm ci
+      - name: Windows 패키징 (nsis + latest.yml)
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist -- --publish never
+      - name: 산출물 존재 검증 (exe + latest.yml)
+        working-directory: desktop
+        shell: bash
+        run: |
+          test -f release/Splendor-Tray-Setup.exe || (echo 'Splendor-Tray-Setup.exe 누락' && exit 1)
+          test -f release/latest.yml || (echo 'latest.yml 누락' && exit 1)
+          ls -la release
+      - name: 워크플로 아티팩트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            desktop/release/Splendor-Tray-Setup.exe
+            desktop/release/latest.yml
+            desktop/release/*.blockmap
+      - name: 릴리스 첨부 (exe + latest.yml + blockmap)
+        if: github.event_name == 'release'
+        working-directory: desktop
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            release/Splendor-Tray-Setup.exe release/latest.yml release/*.blockmap --clobber
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: 웹 트레이 번들 빌드
+        run: |
+          npm ci
+          npm run build:desktop
+      - name: Electron 셸 의존성
+        working-directory: desktop
+        run: npm ci
+      - name: macOS 패키징 (dmg, ad-hoc 서명)
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist:mac -- --publish never
+      - name: dmg 존재 검증
+        working-directory: desktop
+        shell: bash
+        run: |
+          ls -la release
+          test -f release/Splendor-Tray.dmg || (echo 'Splendor-Tray.dmg 누락' && exit 1)
+      - name: 워크플로 아티팩트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-release
+          path: desktop/release/Splendor-Tray.dmg
+      - name: 릴리스 첨부 (dmg)
+        if: github.event_name == 'release'
+        working-directory: desktop
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            release/Splendor-Tray.dmg --clobber
