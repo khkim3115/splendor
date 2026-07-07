@@ -94,4 +94,38 @@ describe('TrayGame 접힘 뷰', () => {
     // 공급 영역 존재
     expect(panel.querySelector('[data-tray-supply]')).toBeTruthy()
   })
+
+  it('상대 펼침: 나를 제외한 상대 요약이 표시된다', async () => {
+    const user = userEvent.setup()
+    const s = humanVsAi()
+    const withAi = patchPlayer(s, 1, { prestige: 7 })
+    useGameStore.setState({ committed: withAi })
+    render(<TrayGame committed={withAi} />)
+    await user.click(screen.getByRole('button', { name: '상대' }))
+
+    const panel = document.querySelector('[data-tray-panel="opponents"]')!
+    const rows = panel.querySelectorAll('[data-opp-index]')
+    expect(rows).toHaveLength(1) // 2인전 → 상대 1명
+    expect(panel.textContent).toContain('AI')
+    expect(panel.textContent).toContain('7점')
+  })
+
+  it('귀족 펼침: 남은 귀족 요구조건이 코드로 표시된다', async () => {
+    const user = userEvent.setup()
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    await user.click(screen.getByRole('button', { name: '귀족' }))
+
+    const panel = document.querySelector('[data-tray-panel="nobles"]')!
+    const { NOBLES } = await import('../../src/engine')
+    const items = panel.querySelectorAll('[data-noble-id]')
+    expect(items.length).toBe(s.nobles.length)
+    expect(items.length).toBeGreaterThan(0)
+    // 첫 귀족의 요구 색 중 하나의 코드가 텍스트에 있다
+    const req = NOBLES[s.nobles[0]!]!.requirement
+    const someColor = (['white','blue','green','red','black'] as const).find((c) => req[c] > 0)!
+    const code = { white:'흰', blue:'파', green:'초', red:'빨', black:'검' }[someColor]
+    expect(panel.textContent).toContain(code)
+  })
 })

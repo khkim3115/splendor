@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { CARDS, TOKEN_COLORS, WINNING_PRESTIGE, type GameState } from '../../engine'
+import { CARDS, GEM_COLORS, NOBLES, TOKEN_COLORS, WINNING_PRESTIGE, type GameState } from '../../engine'
 import { useGameStore, viewerIndexFor } from '../../store/gameStore'
 import { cardCode, gemCode, playerLine } from '../format'
 import { useTraySettings, type TrayExpand } from '../useTraySettings'
@@ -45,6 +45,39 @@ function BoardPanel({ committed, lang }: { committed: GameState; lang: 'ko' | 'e
           </span>
         ))}
       </div>
+    </section>
+  )
+}
+
+function OpponentsPanel({ committed, me, lang }: { committed: GameState; me: number; lang: 'ko' | 'en' }) {
+  return (
+    <section className="tray-panel" data-tray-panel="opponents" aria-label="상대">
+      {committed.players.map((_, i) =>
+        i === me ? null : (
+          <div className="tray-opp" data-opp-index={i} key={i}>
+            <span className="tray-opp-name">{committed.config.players[i]!.name}</span>
+            <span className="tray-opp-line">{playerLine(committed, i, lang)}</span>
+          </div>
+        ),
+      )}
+    </section>
+  )
+}
+
+function NoblesPanel({ committed, lang }: { committed: GameState; lang: 'ko' | 'en' }) {
+  return (
+    <section className="tray-panel" data-tray-panel="nobles" aria-label="귀족">
+      {committed.nobles.map((id) => {
+        const req = NOBLES[id]!.requirement
+        return (
+          <div className="tray-noble" data-noble-id={id} key={id}>
+            👑{' '}
+            {GEM_COLORS.filter((c) => req[c] > 0)
+              .map((c) => `${gemCode(c, lang)}${req[c]}`)
+              .join(' ')}
+          </div>
+        )
+      })}
     </section>
   )
 }
@@ -99,16 +132,8 @@ export function TrayGame({ committed }: { committed: GameState }) {
       </nav>
 
       {expand.board && <BoardPanel committed={committed} lang={gemCodeLang} />}
-      {expand.opponents && (
-        <section className="tray-panel" data-tray-panel="opponents" aria-label="상대">
-          {/* Task 8에서 채운다 */}
-        </section>
-      )}
-      {expand.nobles && (
-        <section className="tray-panel" data-tray-panel="nobles" aria-label="귀족">
-          {/* Task 8에서 채운다 */}
-        </section>
-      )}
+      {expand.opponents && <OpponentsPanel committed={committed} me={me} lang={gemCodeLang} />}
+      {expand.nobles && <NoblesPanel committed={committed} lang={gemCodeLang} />}
     </main>
   )
 }
