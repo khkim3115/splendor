@@ -121,6 +121,18 @@ export function SetupScreen() {
           {loadError && <p className="error-text">⚠ {loadError}</p>}
         </section>
       )}
+
+      <p className="setup-download">
+        🖥️ 데스크톱에 작게 띄워두고 싶다면{' '}
+        <a
+          href="https://github.com/khkim3115/splendor/releases/latest"
+          target="_blank"
+          rel="noreferrer"
+        >
+          트레이 앱 다운로드
+        </a>
+        <span className="setup-download-os"> · Windows · macOS</span>
+      </p>
     </main>
   )
 }
