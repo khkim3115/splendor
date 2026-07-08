@@ -10,6 +10,9 @@ contextBridge.exposeInMainWorld('tray', {
   resize(w, h) {
     ipcRenderer.send('tray-resize', { w, h })
   },
+  setTheme(mode) {
+    ipcRenderer.send('tray-set-theme', mode)
+  },
   setOpacity(value, persist) {
     ipcRenderer.send('tray-set-opacity', { value, persist })
   },

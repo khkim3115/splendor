@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { setAiDelayScale } from '../../src/ai/client'
@@ -397,5 +397,158 @@ describe('TrayGame 강제 페이즈 — PASS-only (§9-G)', () => {
     useGameStore.setState({ committed: s })
     render(<TrayGame committed={s} />)
     expect(screen.queryByRole('button', { name: '패스' })).toBeNull()
+  })
+})
+
+describe('TrayGame 단축키', () => {
+  beforeEach(resetStore)
+  afterEach(cleanup)
+
+  it('B 키 → 보드 펼침 토글', () => {
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    expect(document.querySelector('[data-tray-panel="board"]')).toBeNull()
+    fireEvent.keyDown(document, { key: 'b' })
+    expect(document.querySelector('[data-tray-panel="board"]')).toBeTruthy()
+  })
+
+  it('1 키 → 토큰 집기(내 차례·play)', () => {
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    fireEvent.keyDown(document, { key: '1' })
+    expect(useGameStore.getState().pendingPicks).toEqual(['white'])
+  })
+
+  it('Ctrl+B 는 무시(수식키) — 리스너 존재 + 조합 가드 둘 다 검증', () => {
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+
+    // 먼저 'b' 로 보드를 연다(리스너가 실제로 붙어있음을 증명 — 접힘 기본값만으론 통과되는 공허한 검증 방지)
+    fireEvent.keyDown(document, { key: 'b' })
+    expect(document.querySelector('[data-tray-panel="board"]')).toBeTruthy()
+
+    // Ctrl+B 는 무시되어야 한다 → 방금 연 보드가 닫히지 않고 그대로 열려 있어야 한다
+    fireEvent.keyDown(document, { key: 'b', ctrlKey: true })
+    expect(document.querySelector('[data-tray-panel="board"]')).toBeTruthy()
+  })
+
+  it('L 키 → 언어 전환(헤더 코드 표시 한↔EN 토글)', () => {
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+
+    const langBtn = screen.getByRole('button', { name: '글자코드 언어 전환' })
+    const before = langBtn.textContent
+    fireEvent.keyDown(document, { key: 'l' })
+    expect(langBtn.textContent).not.toBe(before)
+
+    fireEvent.keyDown(document, { key: 'l' })
+    expect(langBtn.textContent).toBe(before)
+  })
+
+  it('Enter: 포커스가 취소 버튼이면 전역 확정으로 가로채지 않는다', () => {
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+
+    // 서로 다른 색 3개 대기 조립(합법 TAKE_DIFFERENT — 숫자키 단축키 경유)
+    fireEvent.keyDown(document, { key: '1' })
+    fireEvent.keyDown(document, { key: '2' })
+    fireEvent.keyDown(document, { key: '3' })
+    expect(useGameStore.getState().pendingPicks).toEqual(['white', 'blue', 'green'])
+
+    const cancelBtn = screen.getByRole('button', { name: '취소' })
+    cancelBtn.focus()
+    expect(document.activeElement).toBe(cancelBtn)
+
+    // Enter 를 취소 버튼 위에서 발생시킨다(keydown 은 버블 → document 리스너까지 전파, e.target=버튼)
+    fireEvent.keyDown(cancelBtn, { key: 'Enter' })
+
+    // 전역 confirm 이 가로채 dispatch 됐다면 pendingPicks가 비워졌을 것 — 가로채지 않았어야 하므로 그대로 남는다
+    expect(useGameStore.getState().pendingPicks).toEqual(['white', 'blue', 'green'])
+    expect(useGameStore.getState().actionLog.length).toBe(0)
+  })
+
+  it('Enter: 포커스된 버튼이 없으면(body) 대기 집기를 실제로 확정 dispatch 한다', () => {
+    // 반납(discard) 유도로 턴 종료·AI 자동응수를 피해 동기적으로 검증한다 —
+    // 흰 8개를 이미 들고 있는 채로 흰/파/초 3색을 더 집으면 11개(§5 초과)로 discard 강제,
+    // currentPlayer 는 그대로 사람이라 AI 는 호출되지 않는다.
+    const s = patchPlayer(humanVsAi(), 0, { tokens: tokens({ white: 8 }) })
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+
+    fireEvent.keyDown(document, { key: '1' })
+    fireEvent.keyDown(document, { key: '2' })
+    fireEvent.keyDown(document, { key: '3' })
+    expect(useGameStore.getState().pendingPicks).toEqual(['white', 'blue', 'green'])
+
+    // 포커스된 엘리먼트가 없으면(jsdom 기본값 = body) 확정이 가로채이지 않아야 한다
+    expect(document.activeElement).toBe(document.body)
+    fireEvent.keyDown(document.body, { key: 'Enter' })
+
+    expect(useGameStore.getState().actionLog).toHaveLength(1)
+    expect(useGameStore.getState().actionLog[0]!.type).toBe('TAKE_DIFFERENT')
+    expect(useGameStore.getState().pendingPicks).toEqual([])
+    expect(useGameStore.getState().committed!.phase.kind).toBe('discard')
+  })
+
+  it('U 키 → 무르기(canUndo 일 때만) — 직전 사람 행동 시점으로 롤백', () => {
+    // newGame 을 거치지 않고도 undo 불변식(snapshots[0] = 행동 전 상태)만 갖추면
+    // 충분히 결정론적으로 검증할 수 있다. 위와 동일하게 discard 유도로 AI 자동응수를 피한다.
+    const s = patchPlayer(humanVsAi(), 0, { tokens: tokens({ white: 8 }) })
+    useGameStore.setState({ committed: s, snapshots: [s] })
+    render(<TrayGame committed={s} />)
+
+    fireEvent.keyDown(document, { key: '1' })
+    fireEvent.keyDown(document, { key: '2' })
+    fireEvent.keyDown(document, { key: '3' })
+    fireEvent.keyDown(document.body, { key: 'Enter' })
+    expect(useGameStore.getState().actionLog).toHaveLength(1)
+    expect(useGameStore.getState().committed!.phase.kind).toBe('discard')
+
+    fireEvent.keyDown(document, { key: 'u' })
+
+    expect(useGameStore.getState().actionLog).toHaveLength(0)
+    expect(useGameStore.getState().committed!.phase.kind).toBe('play')
+    expect(useGameStore.getState().committed!.players[0]!.tokens.white).toBe(8)
+  })
+
+  it('P 키 → 패스(§9-G PASS-only 상태)', () => {
+    // 기존 "합법 행동이 없으면 패스 affordance…" 테스트와 동일한 PASS-only 조립을
+    // 키보드 경로로도 검증한다. 전원 교착(allPlayersStuck)이라 PASS 직후 gameOver 로
+    // 종료되므로 AI 자동응수 걱정 없이 동기적으로 단언할 수 있다.
+    const s = humanVsAi()
+    const emptyBoard = s.board.map((row) => row.map(() => null))
+    const passState: GameState = {
+      ...s,
+      supply: tokens(),
+      decks: [[], [], []],
+      board: emptyBoard,
+      nobles: [],
+      players: s.players.map((p, i) =>
+        i === 0
+          ? {
+              ...p,
+              tokens: tokens(),
+              bonuses: gems(),
+              reserved: [
+                { cardId: 40, fromDeck: false },
+                { cardId: 41, fromDeck: false },
+                { cardId: 42, fromDeck: false },
+              ],
+            }
+          : p,
+      ),
+    } as GameState
+    useGameStore.setState({ committed: passState })
+    render(<TrayGame committed={passState} />)
+
+    fireEvent.keyDown(document, { key: 'p' })
+
+    expect(useGameStore.getState().actionLog).toHaveLength(1)
+    expect(useGameStore.getState().actionLog[0]!.type).toBe('PASS')
   })
 })

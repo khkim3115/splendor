@@ -10,4 +10,9 @@ function bgFor(t) {
   return BG[t] || BG.dark
 }
 
-module.exports = { BG, nextTheme, bgFor }
+/** IPC 로 들어온 임의 mode 값을 'light'|'dark' 로 정규화한다('light' 만 light, 그 외 dark). */
+function normalizeTheme(mode) {
+  return mode === 'light' ? 'light' : 'dark'
+}
+
+module.exports = { BG, nextTheme, bgFor, normalizeTheme }

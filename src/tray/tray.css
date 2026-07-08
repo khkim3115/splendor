@@ -40,10 +40,12 @@ body {
   font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
   font-size: 11px;
   line-height: 1.4;
+  overflow-x: hidden; /* 가로 스크롤바 원천 차단(이슈 ④) */
 }
 
 #root {
   height: 100%;
+  overflow-x: hidden;
 }
 
 button {
@@ -270,4 +272,74 @@ button {
 }
 .tray-result-score {
   color: var(--fg-dim);
+}
+
+/* ── 상단 바(타이틀바) — 드래그 영역 + 투명도/테마/닫기 (이슈 ②③⑤) ── */
+.tray-titlebar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 22px;
+  padding: 0 6px;
+  border-bottom: 1px solid var(--line);
+  -webkit-app-region: drag; /* 빈 영역/이름을 잡고 창 이동(main.js movable:true 와 한 쌍) */
+  user-select: none;
+}
+.tray-titlebar-name {
+  color: var(--fg-faint);
+  font-size: 10px;
+}
+.tray-titlebar-ctrls {
+  display: flex;
+  gap: 2px;
+  -webkit-app-region: no-drag; /* 버튼은 클릭 가능해야 하므로 드래그에서 제외 */
+}
+.tray-titlebar-btn {
+  -webkit-app-region: no-drag;
+  background: transparent;
+  border: none;
+  color: var(--fg-dim);
+  font-size: 11px;
+  line-height: 1;
+  padding: 2px 3px;
+  cursor: pointer;
+}
+.tray-titlebar-btn:hover {
+  color: var(--fg);
+}
+/* 투명도 팝오버 — 바 아래에 뜬다 */
+.tray-opacity-pop {
+  position: absolute;
+  top: 24px;
+  right: 6px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  -webkit-app-region: no-drag;
+}
+.tray-opacity-pop input[type='range'] {
+  width: 100px;
+  -webkit-app-region: no-drag;
+}
+.tray-opacity-val {
+  color: var(--fg-dim);
+  font-size: 10px;
+  min-width: 30px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 가로 스크롤 방지: 폭 초과 가능 행은 세로로 래핑(클리핑·가로바 동시 차단, 이슈 ④) ── */
+.tray-tier,
+.tray-take,
+.tray-supply,
+.tray-toggles,
+.tray-seg {
+  flex-wrap: wrap;
 }

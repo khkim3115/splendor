@@ -7,8 +7,9 @@ declare global {
       hide(): void
       resize(w: number, h: number): void
       setOpacity(v: number, persist?: boolean): void
-      onOpacity(cb: (v: number) => void): void
-      onTheme(cb: (theme: 'light' | 'dark') => void): void
+      setTheme(mode: 'light' | 'dark'): void
+      onOpacity(cb: (v: number) => void): () => void
+      onTheme(cb: (theme: 'light' | 'dark') => void): () => void
     }
   }
 }

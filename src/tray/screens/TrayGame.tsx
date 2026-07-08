@@ -16,6 +16,7 @@ import {
 import { buildPickAction, canUndo, useGameStore, viewerIndexFor } from '../../store/gameStore'
 import { cardCode, gemCode, playerLine } from '../format'
 import { useTraySettings, type TrayExpand } from '../useTraySettings'
+import { resolveShortcut } from '../shortcuts'
 
 const PANEL_LABEL: Record<keyof TrayExpand, string> = {
   board: '보드',
@@ -365,6 +366,64 @@ export function TrayGame({ committed }: { committed: GameState }) {
   const myTurn = committed.config.players[committed.currentPlayer]?.type === 'human'
   const myScore = committed.players[me]!.prestige
   const phase = committed.phase
+
+  const togglePick = useGameStore((s) => s.togglePick)
+  const dispatch = useGameStore((s) => s.dispatch)
+  const undo = useGameStore((s) => s.undo)
+  const pendingPicks = useGameStore((s) => s.pendingPicks)
+  const undoable = useGameStore((s) => canUndo(s))
+
+  // 게임 조작 단축키(이슈 ①) — Esc 는 TrayApp 소유이므로 여기선 무시. 화면 힌트는 노출 안 함.
+  const phaseKind = committed.phase.kind
+  const passOnly = (() => {
+    const legal = legalActions(committed)
+    return legal.length === 1 && legal[0]!.type === 'PASS'
+  })()
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return // TrayApp 소유
+      // Enter/Space 는 포커스된 버튼의 기본 활성화 키 — 버튼이 포커스면 그 버튼이 처리하게 두고
+      // 전역 확정(confirm)으로 가로채지 않는다(취소/무르기 등 버튼 포커스 중 Enter 오확정 방지).
+      if ((e.key === 'Enter' || e.key === ' ') && e.target instanceof HTMLButtonElement) return
+      const action = resolveShortcut(
+        { key: e.key, hasModifier: e.ctrlKey || e.altKey || e.metaKey },
+        {
+          popoverOpen: false, // 이 리스너는 Esc 를 다루지 않으므로 미사용
+          screen: 'game',
+          phase: phaseKind,
+          myTurn,
+          passOnly,
+          undoable,
+          hasPending: pendingPicks.length > 0,
+        },
+      )
+      switch (action.type) {
+        case 'toggleExpand':
+          e.preventDefault(); toggleExpand(action.panel); break
+        case 'toggleLang':
+          e.preventDefault(); setGemLang(gemCodeLang === 'ko' ? 'en' : 'ko'); break
+        case 'undo':
+          e.preventDefault(); undo(); break
+        case 'confirm': {
+          e.preventDefault()
+          const a = buildPickAction(pendingPicks)
+          if (a) dispatch(a)
+          break
+        }
+        case 'pass':
+          e.preventDefault(); dispatch({ type: 'PASS' }); break
+        case 'pick':
+          e.preventDefault(); togglePick(GEM_COLORS[action.index]!); break
+        default:
+          break // 'none' | 'hide' | 'closePopover' 무시
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [
+    phaseKind, myTurn, passOnly, undoable, pendingPicks,
+    gemCodeLang, toggleExpand, setGemLang, undo, dispatch, togglePick,
+  ])
 
   // 펼침 조합이 바뀌면 셸에 리사이즈 요청 (브라우저에선 window.tray가 없어 no-op)
   useEffect(() => {
