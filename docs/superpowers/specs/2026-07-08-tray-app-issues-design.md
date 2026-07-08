@@ -92,9 +92,17 @@
   - `1`~`5` → `myTurn && phase==='play'`일 때 `pick:0..4`
     (인덱스는 `GEM_COLORS = [white,blue,green,red,black]`; 1→white … 5→black)
 
-**`TrayApp`**: `document.addEventListener('keydown')` 하나에서 `resolveShortcut` 결과를
-스토어/설정 액션으로 디스패치. 컨텍스트는 스토어·`useTraySettings`·팝오버 상태에서 조립.
-팝오버 상태는 `TrayTitleBar`와 공유해야 하므로 `TrayApp`가 소유하고 바에 내려준다.
+**리스너 배치(2분할 — 순수함수는 공유, 액션은 분리)**: `resolveShortcut`는 모든 키를
+매핑하는 단일 순수함수지만, 실제 액션 디스패치는 두 리스너가 각자 담당 범위만 처리한다.
+`useTraySettings`(펼침·언어)를 상위로 끌어올려 `TrayGame` 프로프를 바꾸면 기존 테스트
+호출부(~10곳)가 대량 변경되므로, 대신 컨텍스트를 이미 쥔 곳에서 처리한다:
+- **`TrayApp`**(항상 마운트, 팝오버 상태 소유): `document` keydown에서 `resolveShortcut`
+  결과 중 `'closePopover'`·`'hide'`(=Esc, 이슈 ⑤)만 처리. 나머지는 무시.
+- **`TrayGame`**(게임 화면에서만 마운트, `useTraySettings`·스토어·페이즈 컨텍스트 보유):
+  `document` keydown에서 `resolveShortcut` 결과 중 게임 조작
+  (`toggleExpand:*`·`toggleLang`·`undo`·`confirm`·`pass`·`pick:*`)만 처리. `Esc` 결과는 무시.
+- 두 리스너의 액션 집합이 서로소라 같은 이벤트를 이중 처리하지 않는다. Esc는 `TrayApp`만,
+  게임 키는 `TrayGame`만 반응한다. 팝오버 상태는 `TrayApp`가 소유하고 `TrayTitleBar`에 내려준다.
 
 - 힌트 노출: **숨김** 확정. 각 아이콘 버튼 `title`에만 단축키 안내(예: `title="닫기 (Esc)"`),
   README/커밋 메시지에 표를 문서화.
@@ -121,7 +129,8 @@
 - `src/tray/shortcuts.ts` — `resolveShortcut` 순수 매핑
 
 **수정**
-- `src/tray/TrayApp.tsx` — `<TrayTitleBar>` 마운트, 전역 `keydown` 배선, 팝오버 상태 소유
+- `src/tray/TrayApp.tsx` — `<TrayTitleBar>` 마운트, 팝오버 상태 소유, `keydown`(Esc/hide)
+- `src/tray/screens/TrayGame.tsx` — `keydown`(게임 조작 단축키) 리스너 추가
 - `src/tray/tray.css` — 상단 바·팝오버·드래그 영역·`overflow-x` 가드·행 래핑
 - `src/tray/tray-window.d.ts` — `setTheme` 타입
 - `desktop/preload.js` — `setTheme` 노출
