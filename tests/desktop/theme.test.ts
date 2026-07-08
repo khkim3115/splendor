@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
-const { BG, nextTheme, bgFor } = require('../../desktop/lib/theme.cjs') as {
+const { BG, nextTheme, bgFor, normalizeTheme } = require('../../desktop/lib/theme.cjs') as {
   BG: { dark: string; light: string }
   nextTheme: (t: 'light' | 'dark') => 'light' | 'dark'
   bgFor: (t: 'light' | 'dark') => string
+  normalizeTheme: (mode: unknown) => 'light' | 'dark'
 }
 
 describe('theme', () => {
@@ -19,5 +20,11 @@ describe('theme', () => {
   it('bgFor 는 테마별 배경색', () => {
     expect(bgFor('dark')).toBe('#14161a')
     expect(bgFor('light')).toBe('#f4f4f5')
+  })
+  it('normalizeTheme 는 light 만 light, 그 외 전부 dark', () => {
+    expect(normalizeTheme('light')).toBe('light')
+    expect(normalizeTheme('dark')).toBe('dark')
+    expect(normalizeTheme(undefined)).toBe('dark')
+    expect(normalizeTheme('bogus')).toBe('dark')
   })
 })

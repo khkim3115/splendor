@@ -18,7 +18,7 @@ const { resolveAppRequest } = require('./lib/appProtocol.cjs')
 const { shouldHideOnBlur } = require('./lib/windowPolicy.cjs')
 const { readSettings, writeSettings } = require('./lib/settings.cjs')
 const { clampOpacity, clampPercent } = require('./lib/opacity.cjs')
-const { bgFor, nextTheme } = require('./lib/theme.cjs')
+const { bgFor, nextTheme, normalizeTheme } = require('./lib/theme.cjs')
 const { clampBounds, isUserMove, isValidResize } = require('./lib/position.cjs')
 const { nextVisibility, registerBossKey: tryRegisterBossKey, setBossKey } = require('./lib/bosskey.cjs')
 const { buildTrayTemplate } = require('./lib/trayMenu.cjs')
@@ -212,11 +212,15 @@ function applyTheme(theme) {
   win.webContents.send('tray-theme', theme)
 }
 
-function toggleTheme() {
-  const theme = nextTheme(settings.theme)
+// 테마를 확정 적용·영속화한다 — 트레이 메뉴 토글과 렌더러 IPC 가 공유하는 단일 경로.
+function applyThemeAndPersist(theme) {
   settings = writeSettings(app.getPath('userData'), { theme })
   applyTheme(theme)
   rebuildTrayMenu()
+}
+
+function toggleTheme() {
+  applyThemeAndPersist(nextTheme(settings.theme))
 }
 
 /** OS 로그인 항목에 자동실행 설정을 반영한다(순수 인자 구성은 lib/autostart.cjs). */
@@ -426,6 +430,11 @@ function registerIpc() {
   })
 
   ipcMain.on('tray-hide', () => hidePanel())
+
+  // 렌더러 상단 바의 테마 토글 — 특정 테마로 확정 적용·영속(토글 아님). 트레이 메뉴와 동일 경로 공유.
+  ipcMain.on('tray-set-theme', (_e, mode) => {
+    applyThemeAndPersist(normalizeTheme(mode))
+  })
 
   // 렌더러가 패널 확장/축소로 계산한 목표 {w,h} 를 보내면, 현재 창의 우하단을
   // 앵커로 유지한 채 작업영역에 클램프해 리사이즈한다(점진적 공개).
