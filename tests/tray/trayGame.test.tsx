@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { setAiDelayScale } from '../../src/ai/client'
@@ -397,5 +397,35 @@ describe('TrayGame 강제 페이즈 — PASS-only (§9-G)', () => {
     useGameStore.setState({ committed: s })
     render(<TrayGame committed={s} />)
     expect(screen.queryByRole('button', { name: '패스' })).toBeNull()
+  })
+})
+
+describe('TrayGame 단축키', () => {
+  beforeEach(resetStore)
+  afterEach(cleanup)
+
+  it('B 키 → 보드 펼침 토글', () => {
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    expect(document.querySelector('[data-tray-panel="board"]')).toBeNull()
+    fireEvent.keyDown(document, { key: 'b' })
+    expect(document.querySelector('[data-tray-panel="board"]')).toBeTruthy()
+  })
+
+  it('1 키 → 토큰 집기(내 차례·play)', () => {
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    fireEvent.keyDown(document, { key: '1' })
+    expect(useGameStore.getState().pendingPicks).toEqual(['white'])
+  })
+
+  it('Ctrl+B 는 무시(수식키)', () => {
+    const s = humanVsAi()
+    useGameStore.setState({ committed: s })
+    render(<TrayGame committed={s} />)
+    fireEvent.keyDown(document, { key: 'b', ctrlKey: true })
+    expect(document.querySelector('[data-tray-panel="board"]')).toBeNull()
   })
 })
