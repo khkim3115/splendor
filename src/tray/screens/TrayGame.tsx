@@ -382,6 +382,9 @@ export function TrayGame({ committed }: { committed: GameState }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') return // TrayApp 소유
+      // Enter/Space 는 포커스된 버튼의 기본 활성화 키 — 버튼이 포커스면 그 버튼이 처리하게 두고
+      // 전역 확정(confirm)으로 가로채지 않는다(취소/무르기 등 버튼 포커스 중 Enter 오확정 방지).
+      if ((e.key === 'Enter' || e.key === ' ') && e.target instanceof HTMLButtonElement) return
       const action = resolveShortcut(
         { key: e.key, hasModifier: e.ctrlKey || e.altKey || e.metaKey },
         {

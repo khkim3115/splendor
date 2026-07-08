@@ -46,6 +46,8 @@ describe('resolveShortcut', () => {
     expect(resolveShortcut({ key: '5', hasModifier: false }, gameCtx())).toEqual({ type: 'pick', index: 4 })
     expect(resolveShortcut({ key: '1', hasModifier: false }, gameCtx({ phase: 'discard' }))).toEqual({ type: 'none' })
     expect(resolveShortcut({ key: '1', hasModifier: false }, gameCtx({ myTurn: false }))).toEqual({ type: 'none' })
+    // §9-G PASS-only 턴에는 집기 버튼 자체가 숨겨지므로 숫자키도 무시해야 한다(패스만 가능)
+    expect(resolveShortcut({ key: '1', hasModifier: false }, gameCtx({ passOnly: true }))).toEqual({ type: 'none' })
   })
   it('매핑 없는 키 → none', () => {
     expect(resolveShortcut({ key: 'z', hasModifier: false }, gameCtx())).toEqual({ type: 'none' })

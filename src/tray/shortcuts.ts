@@ -58,7 +58,7 @@ export function resolveShortcut(input: ShortcutInput, ctx: ShortcutContext): Sho
   }
   // 숫자키 1..5 → 토큰 집기(내 차례·play 페이즈에서만).
   if (k >= '1' && k <= '5') {
-    if (ctx.myTurn && ctx.phase === 'play') {
+    if (ctx.myTurn && ctx.phase === 'play' && !ctx.passOnly) {
       const index = Number(k) - 1
       if (index < GEM_COLORS.length) return { type: 'pick', index }
     }
